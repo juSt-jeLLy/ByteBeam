@@ -1,0 +1,86 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { Monitor, Moon, Palette, Sun } from "lucide-react";
+import { PageHeader } from "@/features/shared/components";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { useTheme, type Theme } from "@/features/theme/ThemeProvider";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/settings")({
+  component: SettingsPage,
+});
+
+const THEME_OPTIONS: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+];
+
+function SettingsPage() {
+  const { theme, setTheme } = useTheme();
+  const { session, isDemoMode } = useAuth();
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Settings"
+        description="Review workspace mode, authentication source, and visual preferences."
+      />
+
+      <section className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card p-5 shadow-card">
+          <SectionHeader icon={Palette} title="Appearance" />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {THEME_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const active = theme === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border p-4 text-left transition-smooth",
+                    active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50",
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5 shadow-card">
+          <SectionHeader icon={Monitor} title="Workspace" />
+          <dl className="mt-5 space-y-3 text-sm">
+            <Row label="Signed in as" value={session?.user.email ?? "Not signed in"} />
+            <Row label="Backend mode" value={isDemoMode ? "Local seed fallback" : "Supabase"} />
+            <Row label="Product" value="Fleet management dashboard" />
+          </dl>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title }: { icon: typeof Sun; title: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h2 className="text-lg font-semibold">{title}</h2>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-medium">{value}</dd>
+    </div>
+  );
+}

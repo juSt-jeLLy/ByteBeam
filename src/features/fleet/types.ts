@@ -68,3 +68,28 @@ export interface FleetDataset {
   alerts: FleetAlert[];
   telemetry: TelemetryPoint[];
 }
+
+export interface VehicleQueueResult {
+  vehicles: Vehicle[];
+  trips: Trip[];
+  alerts: FleetAlert[];
+  totalCount: number;
+  limit: number;
+  nextPage: number | null;
+}
+
+export interface TripPageResult {
+  trips: Trip[];
+  vehicles: Vehicle[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AlertPageResult {
+  alerts: FleetAlert[];
+  vehicles: Vehicle[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}

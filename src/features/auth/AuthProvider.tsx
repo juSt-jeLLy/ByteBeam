@@ -2,51 +2,26 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-interface DemoSession {
-  user: {
-    email: string;
-    user_metadata: {
-      full_name: string;
-      role: string;
-    };
-  };
-}
-
-type FleetSession = Session | DemoSession;
-
 interface AuthContextValue {
-  session: FleetSession | null;
+  session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  isDemoMode: boolean;
+  isSupabaseReady: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const DEMO_SESSION_KEY = "bytebeam-demo-session";
-
-const createDemoSession = (email: string): DemoSession => ({
-  user: {
-    email,
-    user_metadata: {
-      full_name: "Ops Manager",
-      role: "Fleet Operations",
-    },
-  },
-});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<FleetSession | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isDemoMode = !supabase;
+  const isSupabaseReady = Boolean(supabase);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadSession() {
       if (!supabase) {
-        const stored = window.localStorage.getItem(DEMO_SESSION_KEY);
-        if (mounted && stored) setSession(createDemoSession(stored));
         if (mounted) setIsLoading(false);
         return;
       }
@@ -78,12 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       isLoading,
-      isDemoMode,
+      isSupabaseReady,
       signIn: async (email, password) => {
         if (!supabase) {
-          window.localStorage.setItem(DEMO_SESSION_KEY, email);
-          setSession(createDemoSession(email));
-          return;
+          throw new Error("Supabase environment variables are required to sign in.");
         }
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -91,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       signOut: async () => {
         if (!supabase) {
-          window.localStorage.removeItem(DEMO_SESSION_KEY);
           setSession(null);
           return;
         }
@@ -100,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) throw new Error(error.message);
       },
     }),
-    [isDemoMode, isLoading, session],
+    [isLoading, isSupabaseReady, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

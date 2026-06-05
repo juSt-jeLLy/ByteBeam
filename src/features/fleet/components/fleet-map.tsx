@@ -87,9 +87,11 @@ export function FleetMap({
   }, [isPlaying, selectedTrip]);
 
   return (
-    <div className={`relative overflow-hidden rounded-lg border border-border ${heightClassName}`}>
+    <div
+      className={`relative isolate z-0 overflow-hidden rounded-lg border border-border ${heightClassName}`}
+    >
       {selectedTrip && selectedTrip.route.length > 0 && (
-        <div className="absolute left-3 top-3 z-[500] flex items-center gap-2 rounded-md border border-border bg-card/95 p-2 shadow-card backdrop-blur">
+        <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded-md border border-border bg-card/95 p-2 shadow-card backdrop-blur">
           <button
             type="button"
             onClick={() => setIsPlaying((value) => !value)}
@@ -118,7 +120,7 @@ export function FleetMap({
         center={[center.lat, center.lng]}
         zoom={11}
         scrollWheelZoom
-        className="h-full w-full"
+        className="z-0 h-full w-full"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

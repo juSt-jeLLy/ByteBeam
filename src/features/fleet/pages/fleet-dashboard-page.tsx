@@ -24,10 +24,15 @@ import {
   computeVehicleUtilization,
   useFleetDataset,
 } from "@/features/fleet";
-import { FleetMap } from "@/features/fleet/components/fleet-map";
-import { VehicleDetailPanel } from "@/features/fleet/components/vehicle-detail-panel";
-import { VehicleList } from "@/features/fleet/components/vehicle-list";
-import { useSelectedVehicleId, useSetSelectedVehicleId } from "@/store";
+import { ChartLimitControl } from "@/features/fleet/components/chart-limit-control";
+import { FleetWorkspace } from "@/features/fleet/components/fleet-workspace";
+import { SelectedRouteSummary } from "@/features/fleet/components/selected-route-summary";
+import {
+  useSelectedVehicleId,
+  useSetSelectedVehicleId,
+  useSetVehicleChartLimit,
+  useVehicleChartLimit,
+} from "@/store";
 
 const STATUS_COLORS = ["#16a34a", "#ca8a04", "#dc2626", "#64748b"];
 
@@ -35,6 +40,8 @@ export function FleetDashboardPage() {
   const { data, isLoading, isError } = useFleetDataset();
   const selectedVehicleId = useSelectedVehicleId();
   const setSelectedVehicleId = useSetSelectedVehicleId();
+  const vehicleChartLimit = useVehicleChartLimit();
+  const setVehicleChartLimit = useSetVehicleChartLimit();
 
   const selectedTrip = useMemo(
     () => data?.trips.find((trip) => trip.vehicleId === selectedVehicleId) ?? data?.trips[0],
@@ -54,7 +61,7 @@ export function FleetDashboardPage() {
 
   const metrics = computeFleetMetrics(data);
   const statusBreakdown = computeStatusBreakdown(data.vehicles);
-  const utilization = computeVehicleUtilization(data.vehicles, data.trips);
+  const utilization = computeVehicleUtilization(data.vehicles, data.trips, vehicleChartLimit);
   const tripEfficiency = computeTripEfficiency(data.trips, data.vehicles);
 
   return (
@@ -89,48 +96,29 @@ export function FleetDashboardPage() {
         />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <ChartCard
-          title="Vehicle Map"
-          description="Inspect current position and selected vehicle movement history"
-          action={<SelectedRouteSummary trip={selectedTrip} />}
-        >
-          <FleetMap
-            vehicles={data.vehicles}
-            selectedVehicleId={selectedVehicleId}
-            selectedTrip={selectedTrip}
-            onVehicleSelect={setSelectedVehicleId}
-          />
-        </ChartCard>
-
-        <div className="space-y-5">
-          <ChartCard title="Vehicle Queue" description="Click a vehicle to inspect its route">
-            <VehicleList
-              vehicles={data.vehicles}
-              trips={data.trips}
-              alerts={data.alerts}
-              selectedVehicleId={selectedVehicleId}
-              onSelect={setSelectedVehicleId}
-            />
-          </ChartCard>
-          <ChartCard
-            title="Vehicle Details"
-            description="Selected vehicle health and route context"
-          >
-            <VehicleDetailPanel
-              vehicle={selectedVehicle}
-              trip={selectedTrip}
-              alerts={data.alerts}
-              telemetry={data.telemetry}
-            />
-          </ChartCard>
-        </div>
-      </section>
+      <FleetWorkspace
+        vehicles={data.vehicles}
+        trips={data.trips}
+        alerts={data.alerts}
+        telemetry={data.telemetry}
+        selectedVehicleId={selectedVehicleId}
+        selectedVehicle={selectedVehicle}
+        selectedTrip={selectedTrip}
+        onVehicleSelect={setSelectedVehicleId}
+        mapTitle="Vehicle Map"
+        mapDescription="Inspect current position and selected vehicle movement history"
+        queueTitle="Vehicle Queue"
+        queueDescription="Click a vehicle to inspect its route"
+        detailDescription="Selected vehicle health and route context"
+        routeSummary={<SelectedRouteSummary trip={selectedTrip} />}
+        listHeightClassName="max-h-[420px]"
+      />
 
       <section className="grid gap-5 lg:grid-cols-2">
         <ChartCard
           title="Trip Utilization"
-          description="Distance, driving time, and idle time by vehicle"
+          description="Top vehicle utilization for the selected chart scope"
+          action={<ChartLimitControl value={vehicleChartLimit} onChange={setVehicleChartLimit} />}
         >
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={utilization} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
@@ -185,22 +173,6 @@ export function FleetDashboardPage() {
           accent={metrics.overspeedEvents > 0 ? "destructive" : "success"}
         />
       </section>
-    </div>
-  );
-}
-
-function SelectedRouteSummary({
-  trip,
-}: {
-  trip?: { distanceKm: number; durationMinutes: number; overspeedEvents: number };
-}) {
-  if (!trip) return null;
-
-  return (
-    <div className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
-      <span>{trip.distanceKm} km</span>
-      <span>{trip.durationMinutes} min</span>
-      <span>{trip.overspeedEvents} overspeed</span>
     </div>
   );
 }

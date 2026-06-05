@@ -10,9 +10,9 @@ Map-first fleet operations prototype for the Bytebeam Frontend Intern Assignment
 ## Product Scope
 
 - Protected login experience with Supabase Auth when configured.
-- Review-friendly local demo mode when Supabase environment variables are missing.
 - Central fleet map using Leaflet and OpenStreetMap tiles.
 - Vehicle status queue with driver, energy, last seen, speed, and alert context.
+- Indexed vehicle-number search with debounced server queries and capped results.
 - Vehicle detail panel with current telemetry, ignition, route, and open issue context.
 - Route-history inspection with trip polylines.
 - Route playback controls for inspecting the selected vehicle movement trace.
@@ -41,14 +41,17 @@ npm install
 npm run dev
 ```
 
-The app runs without Supabase by falling back to seeded fleet data and demo login. To test Supabase Auth and persisted backend data, create a `.env` file:
+Supabase is required. Create a `.env` file before signing in:
 
 ```bash
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Then create a Supabase user matching the credentials you want to use, or update the README demo credentials before submitting.
+Then run `supabase-schema.sql` in your Supabase SQL editor and create the demo auth user:
+
+- Email: `ops@bytebeam.local`
+- Password: `bytebeam-demo`
 
 ## Supabase Backend Notes
 
@@ -63,15 +66,24 @@ Tables:
 
 Main tradeoff: route points are stored as JSONB inside each trip for compact route rendering, while `telemetry_points` models how raw telemetry would be persisted. In production, high-volume telemetry would likely move to a dedicated time-series pipeline or partitioned table, while trips would retain aggregate fields for fast dashboard queries.
 
-Realtime is enabled for fleet tables. Supabase database events invalidate the TanStack Query fleet cache, with throttling to avoid refetch storms during bursty updates.
+Realtime is enabled for fleet tables. Supabase database events invalidate the TanStack Query fleet cache, vehicle queue cache, and selected-vehicle snapshot cache, with throttling to avoid refetch storms during bursty updates.
 
-Client-side search uses debouncing, and shared UI state such as selected vehicle, trip filters, and sorting is held in Zustand.
+Vehicle queue search is server-side and debounced. The queue asks Supabase for a limited page of matching vehicles instead of loading the entire `vehicles` table, then fetches only the matching vehicles' recent trips and open alerts. Shared UI state such as selected vehicle, global search, trip filters, and sorting is held in Zustand.
 
-The frontend queries Supabase first and falls back to local seed data if tables are not available, so reviewers can still evaluate the UI quickly.
+Scale decisions:
+
+- Dashboard dataset queries are capped to recent/latest operational records for review speed.
+- Vehicle queue search uses Postgres trigram indexes for registration/model/driver/location text matching.
+- Selected vehicle details are hydrated separately, so an operator can search beyond the initially loaded map batch.
+- Utilization charts aggregate to the selected top vehicle scope plus an "Other vehicles" bucket instead of rendering hundreds of bars.
+- Chart controls let reviewers switch between Top 12, Top 25, and Top 50 views without rendering an unreadable chart.
+- For a production million-row fleet, the next backend step would be RPC/view-based KPI aggregation and viewport-based map queries rather than loading all markers globally.
+
+The frontend does not include local mock fleet data. If Supabase is missing or the tables are unavailable, the app surfaces a real configuration/data error instead of silently falling back to fake data.
 
 ## AI Usage
 
-AI-assisted development was used to interpret the assignment brief, plan the fleet-management prototype, generate fleet-domain seed data, and review implementation gaps against the PDF. Exported notes are included in `AI_CHAT_LOGS.md`.
+AI-assisted development was used to interpret the assignment brief, plan the fleet-management prototype, design Supabase sample records, and review implementation gaps against the PDF. Exported notes are included in `AI_CHAT_LOGS.md`.
 
 ## Scripts
 

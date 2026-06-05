@@ -14,7 +14,7 @@ import {
 
 export function TopBar() {
   const { pathname } = useLocation();
-  const { signOut, session, isDemoMode } = useAuth();
+  const { signOut, session, isSupabaseReady } = useAuth();
 
   const mobileDrawerOpen = useMobileDrawerOpen();
   const setMobileDrawerOpen = useSetMobileDrawerOpen();
@@ -27,7 +27,7 @@ export function TopBar() {
   const Brand = APP_BRAND.icon;
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-[100] flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur-md sm:px-6">
       <button
         className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border"
         onClick={() => setMobileDrawerOpen(true)}
@@ -57,7 +57,7 @@ export function TopBar() {
         <div className="hidden text-right sm:block">
           <p className="text-xs font-medium">{session?.user.email}</p>
           <p className="text-[10px] text-muted-foreground">
-            {isDemoMode ? "Demo mode" : "Supabase"}
+            {isSupabaseReady ? "Supabase" : "Not configured"}
           </p>
         </div>
 

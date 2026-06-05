@@ -1,14 +1,53 @@
-import { AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, CheckCircle2, Clock3, Search } from "lucide-react";
 import { ChartCard } from "@/components/dashboard/ChartCard";
 import { Skeleton } from "@/components/dashboard/Skeleton";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PageHeader } from "@/features/shared/components";
-import { formatRelativeTime, useFleetDataset, useUpdateAlertStatus } from "@/features/fleet";
+import {
+  formatRelativeTime,
+  useAlertPage,
+  useFleetDataset,
+  useUpdateAlertStatus,
+} from "@/features/fleet";
 import { AlertSeverityBadge, AlertStatusBadge } from "@/features/fleet/components/status-badge";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { cn } from "@/lib/utils";
+import {
+  type AlertFilter,
+  useAlertFilter,
+  useAlertSearch,
+  useSetAlertFilter,
+  useSetAlertSearch,
+} from "@/store";
+
+const ALERT_PAGE_SIZE = 10;
+const ALERT_FILTERS: Array<{ value: AlertFilter; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "open", label: "Open" },
+  { value: "acknowledged", label: "Acknowledged" },
+  { value: "resolved", label: "Resolved" },
+];
 
 export function AlertsPage() {
   const { data, isLoading } = useFleetDataset();
+  const [page, setPage] = useState(0);
+  const alertSearch = useAlertSearch();
+  const setAlertSearch = useSetAlertSearch();
+  const alertFilter = useAlertFilter();
+  const setAlertFilter = useSetAlertFilter();
+  const debouncedAlertSearch = useDebouncedValue(alertSearch).trim();
+  const { data: alertPage, isFetching: isAlertPageFetching } = useAlertPage({
+    search: debouncedAlertSearch,
+    status: alertFilter,
+    page,
+    pageSize: ALERT_PAGE_SIZE,
+  });
   const updateAlertStatus = useUpdateAlertStatus();
+
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedAlertSearch, alertFilter]);
 
   if (isLoading || !data) return <Skeleton className="h-96 w-full" />;
 
@@ -30,9 +69,39 @@ export function AlertsPage() {
       </section>
 
       <ChartCard title="Alert Queue" description="Prioritized by newest exception first">
+        <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={alertSearch}
+              onChange={(event) => setAlertSearch(event.target.value)}
+              placeholder="Search by vehicle number, driver, or location…"
+              className="h-10 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ALERT_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => setAlertFilter(filter.value)}
+                className={cn(
+                  "rounded-md border px-3 py-2 text-xs font-semibold transition-smooth",
+                  alertFilter === filter.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:bg-accent",
+                )}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="space-y-3">
-          {data.alerts.map((alert) => {
-            const vehicle = data.vehicles.find((candidate) => candidate.id === alert.vehicleId);
+          {(alertPage?.alerts ?? []).map((alert) => {
+            const vehicle = alertPage?.vehicles.find(
+              (candidate) => candidate.id === alert.vehicleId,
+            );
             const isUpdating = updateAlertStatus.isPending;
 
             return (
@@ -86,6 +155,38 @@ export function AlertsPage() {
               </article>
             );
           })}
+          {(alertPage?.alerts ?? []).length === 0 && (
+            <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              {isAlertPageFetching ? "Loading alerts…" : "No alerts found."}
+            </div>
+          )}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <p className="text-muted-foreground">
+            Showing page {page + 1} of{" "}
+            {Math.max(1, Math.ceil((alertPage?.totalCount ?? 0) / ALERT_PAGE_SIZE))}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page === 0 || isAlertPageFetching}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+              className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              disabled={
+                page + 1 >= Math.ceil((alertPage?.totalCount ?? 0) / ALERT_PAGE_SIZE) ||
+                isAlertPageFetching
+              }
+              onClick={() => setPage((current) => current + 1)}
+              className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </ChartCard>
     </div>

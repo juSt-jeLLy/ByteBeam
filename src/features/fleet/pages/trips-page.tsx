@@ -4,13 +4,16 @@ import { Skeleton } from "@/components/dashboard/Skeleton";
 import { PageHeader } from "@/features/shared/components";
 import { ExportCsvButton } from "@/features/shared/export";
 import { computeTripEfficiency, useFleetDataset } from "@/features/fleet";
+import { ChartLimitControl } from "@/features/fleet/components/chart-limit-control";
 import { TripTable } from "@/features/fleet/components/trip-table";
-import { useTripDateFrom, useTripDateTo } from "@/store";
+import { useSetTripChartLimit, useTripChartLimit, useTripDateFrom, useTripDateTo } from "@/store";
 
 export function TripsPage() {
   const { data, isLoading } = useFleetDataset();
   const dateFrom = useTripDateFrom();
   const dateTo = useTripDateTo();
+  const tripChartLimit = useTripChartLimit();
+  const setTripChartLimit = useSetTripChartLimit();
 
   if (isLoading || !data) return <Skeleton className="h-96 w-full" />;
 
@@ -21,6 +24,7 @@ export function TripsPage() {
     return true;
   });
   const efficiency = computeTripEfficiency(filteredTrips, data.vehicles);
+  const chartEfficiency = efficiency.slice(0, tripChartLimit);
 
   return (
     <div className="space-y-6">
@@ -34,10 +38,11 @@ export function TripsPage() {
 
       <ChartCard
         title="Trip Efficiency"
-        description="Compare distance, idle minutes, and overspeed events"
+        description="Latest matching trips, capped for chart readability"
+        action={<ChartLimitControl value={tripChartLimit} onChange={setTripChartLimit} />}
       >
         <ResponsiveContainer width="100%" height={340}>
-          <BarChart data={efficiency} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
+          <BarChart data={chartEfficiency} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="vehicle" tick={{ fontSize: 11 }} />
             <YAxis />
@@ -50,7 +55,7 @@ export function TripsPage() {
       </ChartCard>
 
       <ChartCard title="Trip Log" description="Sortable trip records for operations review">
-        <TripTable trips={data.trips} vehicles={data.vehicles} />
+        <TripTable />
       </ChartCard>
     </div>
   );

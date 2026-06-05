@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthProvider";
 
 export function LoginPage() {
-  const { session, signIn, isDemoMode } = useAuth();
+  const { session, signIn, isSupabaseReady } = useAuth();
   const [email, setEmail] = useState("ops@bytebeam.local");
   const [password, setPassword] = useState("bytebeam-demo");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +37,9 @@ export function LoginPage() {
           <div>
             <h1 className="text-xl font-semibold">Sign in</h1>
             <p className="text-sm text-muted-foreground">
-              {isDemoMode ? "Demo credentials are pre-filled." : "Use your Supabase credentials."}
+              {isSupabaseReady
+                ? "Use your Supabase credentials."
+                : "Configure Supabase environment variables before signing in."}
             </p>
           </div>
         </div>
@@ -78,7 +80,7 @@ export function LoginPage() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isSupabaseReady}
           className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-smooth hover:opacity-90 disabled:opacity-60"
         >
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}

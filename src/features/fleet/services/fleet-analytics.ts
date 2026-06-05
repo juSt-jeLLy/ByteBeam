@@ -69,14 +69,18 @@ export function computeTripEfficiency(trips: Trip[], vehicles: Vehicle[]) {
   });
 }
 
-export function computeVehicleUtilization(vehicles: Vehicle[], trips: Trip[]) {
-  return vehicles.map((vehicle) => {
-    const vehicleTrips = trips.filter((trip) => trip.vehicleId === vehicle.id);
-    return {
-      vehicle: vehicle.registration,
-      distanceKm: vehicleTrips.reduce((sum, trip) => sum + trip.distanceKm, 0),
-      durationMinutes: vehicleTrips.reduce((sum, trip) => sum + trip.durationMinutes, 0),
-      idleMinutes: vehicleTrips.reduce((sum, trip) => sum + trip.idleMinutes, 0),
-    };
-  });
+export function computeVehicleUtilization(vehicles: Vehicle[], trips: Trip[], limit = 12) {
+  const rows = vehicles
+    .map((vehicle) => {
+      const vehicleTrips = trips.filter((trip) => trip.vehicleId === vehicle.id);
+      return {
+        vehicle: vehicle.registration,
+        distanceKm: vehicleTrips.reduce((sum, trip) => sum + trip.distanceKm, 0),
+        durationMinutes: vehicleTrips.reduce((sum, trip) => sum + trip.durationMinutes, 0),
+        idleMinutes: vehicleTrips.reduce((sum, trip) => sum + trip.idleMinutes, 0),
+      };
+    })
+    .sort((left, right) => right.distanceKm - left.distanceKm);
+
+  return rows.slice(0, limit);
 }

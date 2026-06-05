@@ -57,10 +57,21 @@ create table if not exists public.telemetry_points (
 
 create index if not exists idx_vehicles_status on public.vehicles(status);
 create index if not exists idx_vehicles_last_seen_at on public.vehicles(last_seen_at desc);
+create index if not exists idx_vehicles_status_last_seen_at on public.vehicles(status, last_seen_at desc);
 create index if not exists idx_trips_vehicle_id_started_at on public.trips(vehicle_id, started_at desc);
+create index if not exists idx_trips_started_at on public.trips(started_at desc);
 create index if not exists idx_fleet_alerts_vehicle_id_status on public.fleet_alerts(vehicle_id, status);
 create index if not exists idx_fleet_alerts_created_at on public.fleet_alerts(created_at desc);
+create index if not exists idx_fleet_alerts_status_created_at on public.fleet_alerts(status, created_at desc);
 create index if not exists idx_telemetry_points_vehicle_recorded_at on public.telemetry_points(vehicle_id, recorded_at desc);
+
+create extension if not exists pg_trgm with schema extensions;
+create index if not exists idx_vehicles_registration_trgm on public.vehicles using gin (registration gin_trgm_ops);
+create index if not exists idx_vehicles_model_trgm on public.vehicles using gin (model gin_trgm_ops);
+create index if not exists idx_vehicles_driver_trgm on public.vehicles using gin (driver gin_trgm_ops);
+create index if not exists idx_vehicles_location_name_trgm on public.vehicles using gin (location_name gin_trgm_ops);
+create index if not exists idx_trips_start_location_trgm on public.trips using gin (start_location gin_trgm_ops);
+create index if not exists idx_trips_end_location_trgm on public.trips using gin (end_location gin_trgm_ops);
 
 alter table public.vehicles enable row level security;
 alter table public.trips enable row level security;

@@ -1,7 +1,7 @@
 import { ArrowUpDown } from "lucide-react";
-import { useMemo } from "react";
-import type { Trip, Vehicle } from "@/features/fleet/types";
+import { useEffect, useState } from "react";
 import { getVehicleForTrip } from "@/features/fleet";
+import { useTripPage } from "@/features/fleet/hooks/use-fleet-query";
 import {
   useSetTripDateFrom,
   useSetTripDateTo,
@@ -14,7 +14,9 @@ import {
 } from "@/store";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
-export function TripTable({ trips, vehicles }: { trips: Trip[]; vehicles: Vehicle[] }) {
+const TRIP_PAGE_SIZE = 10;
+
+export function TripTable() {
   const sortKey = useTripSortKey();
   const setSortKey = useSetTripSortKey();
   const query = useTripSearch();
@@ -24,25 +26,24 @@ export function TripTable({ trips, vehicles }: { trips: Trip[]; vehicles: Vehicl
   const dateTo = useTripDateTo();
   const setDateFrom = useSetTripDateFrom();
   const setDateTo = useSetTripDateTo();
+  const [page, setPage] = useState(0);
 
-  const rows = useMemo(() => {
-    const normalizedQuery = debouncedQuery.trim().toLowerCase();
-    return [...trips]
-      .filter((trip) => {
-        const tripDate = trip.startedAt.slice(0, 10);
-        if (dateFrom && tripDate < dateFrom) return false;
-        if (dateTo && tripDate > dateTo) return false;
+  useEffect(() => {
+    setPage(0);
+  }, [dateFrom, dateTo, debouncedQuery, sortKey]);
 
-        const vehicle = getVehicleForTrip(vehicles, trip);
-        const haystack =
-          `${vehicle?.registration ?? ""} ${trip.startLocation} ${trip.endLocation}`.toLowerCase();
-        return haystack.includes(normalizedQuery);
-      })
-      .sort((a, b) => {
-        if (sortKey === "startedAt") return b.startedAt.localeCompare(a.startedAt);
-        return Number(b[sortKey]) - Number(a[sortKey]);
-      });
-  }, [dateFrom, dateTo, debouncedQuery, sortKey, trips, vehicles]);
+  const { data, isFetching, isError } = useTripPage({
+    search: debouncedQuery,
+    dateFrom,
+    dateTo,
+    sortKey,
+    page,
+    pageSize: TRIP_PAGE_SIZE,
+  });
+  const rows = data?.trips ?? [];
+  const vehicles = data?.vehicles ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / TRIP_PAGE_SIZE));
 
   return (
     <div className="space-y-3">
@@ -107,8 +108,39 @@ export function TripTable({ trips, vehicles }: { trips: Trip[]; vehicles: Vehicl
                 </tr>
               );
             })}
+            {rows.length === 0 && (
+              <tr>
+                <td className="px-4 py-8 text-center text-muted-foreground" colSpan={7}>
+                  {isFetching ? "Loading trips…" : "No trips match the current filters."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
+      </div>
+      {isError && <p className="text-sm text-destructive">Unable to load trips from Supabase.</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <p className="text-muted-foreground">
+          Showing page {page + 1} of {totalPages} · {totalCount} matching trips
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={page === 0 || isFetching}
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+            className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            disabled={page + 1 >= totalPages || isFetching}
+            onClick={() => setPage((current) => current + 1)}
+            className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

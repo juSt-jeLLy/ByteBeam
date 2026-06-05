@@ -16,7 +16,7 @@ const THEME_OPTIONS: Array<{ value: Theme; label: string; icon: typeof Sun }> = 
 
 function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { session, isDemoMode } = useAuth();
+  const { session, isSupabaseReady } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -56,7 +56,7 @@ function SettingsPage() {
           <SectionHeader icon={Monitor} title="Workspace" />
           <dl className="mt-5 space-y-3 text-sm">
             <Row label="Signed in as" value={session?.user.email ?? "Not signed in"} />
-            <Row label="Backend mode" value={isDemoMode ? "Local seed fallback" : "Supabase"} />
+            <Row label="Backend mode" value={isSupabaseReady ? "Supabase" : "Not configured"} />
             <Row label="Product" value="Fleet management dashboard" />
           </dl>
         </div>

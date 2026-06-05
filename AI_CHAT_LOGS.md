@@ -8,7 +8,7 @@ This project was updated with AI assistance in Codex.
 - Compared the Bytebeam requirements with the existing project structure.
 - Replaced the old domain with a fleet-management product prototype.
 - Generated realistic seeded vehicle, trip, route, and alert data.
-- Added Supabase Auth/data integration with a local fallback so the app remains easy to review.
+- Added Supabase Auth/data integration and later removed local fleet-data fallback so the submitted app relies on the real Supabase backend.
 - Added map-first UI, route inspection, trip analytics, alert triage, and setup documentation.
 
 ## Tools Used

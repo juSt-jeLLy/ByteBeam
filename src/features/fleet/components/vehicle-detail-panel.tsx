@@ -8,9 +8,16 @@ interface VehicleDetailPanelProps {
   trip?: Trip;
   alerts: FleetAlert[];
   telemetry: TelemetryPoint[];
+  compact?: boolean;
 }
 
-export function VehicleDetailPanel({ vehicle, trip, alerts, telemetry }: VehicleDetailPanelProps) {
+export function VehicleDetailPanel({
+  vehicle,
+  trip,
+  alerts,
+  telemetry,
+  compact = false,
+}: VehicleDetailPanelProps) {
   if (!vehicle) {
     return (
       <div className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
@@ -28,11 +35,11 @@ export function VehicleDetailPanel({ vehicle, trip, alerts, telemetry }: Vehicle
     .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))[0];
 
   return (
-    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+    <div className="space-y-3 rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-lg font-semibold">{vehicle.registration}</p>
-          <p className="text-sm text-muted-foreground">{vehicle.model}</p>
+          <p className="text-base font-semibold">{vehicle.registration}</p>
+          <p className="text-xs text-muted-foreground">{vehicle.model}</p>
         </div>
         <VehicleStatusBadge status={vehicle.status} />
       </div>
@@ -61,12 +68,12 @@ export function VehicleDetailPanel({ vehicle, trip, alerts, telemetry }: Vehicle
             Recent route
           </div>
           <div className="grid gap-2 text-sm sm:grid-cols-2">
-            <span>{trip.startLocation}</span>
-            <span>{trip.endLocation}</span>
+            <span className="truncate">{trip.startLocation}</span>
+            <span className="truncate">{trip.endLocation}</span>
             <span>{trip.distanceKm} km</span>
             <span>{trip.durationMinutes} min</span>
-            <span>{trip.haltCount} halts</span>
-            <span>{trip.overspeedEvents} overspeed</span>
+            {!compact && <span>{trip.haltCount} halts</span>}
+            {!compact && <span>{trip.overspeedEvents} overspeed</span>}
           </div>
         </div>
       )}
@@ -99,11 +106,11 @@ function DetailItem({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md bg-muted/45 p-2">
+    <div className="flex min-h-14 items-center gap-2 rounded-md bg-muted/45 p-2">
       <Icon className="h-4 w-4 text-muted-foreground" />
       <div className="min-w-0">
         <p className="text-[11px] uppercase text-muted-foreground">{label}</p>
-        <p className="truncate text-sm font-medium capitalize">{value}</p>
+        <p className="truncate text-sm font-medium">{value}</p>
       </div>
     </div>
   );

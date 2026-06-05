@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { useEffect, useRef } from "react";
 import {
   fetchAlertPage,
+  fetchAlertStatusCounts,
   fetchFleetDataset,
   fetchTripPage,
   fetchVehicleQueue,
@@ -17,12 +18,23 @@ const VEHICLE_QUEUE_QUERY_KEY = ["vehicle-queue"] as const;
 const VEHICLE_SNAPSHOT_QUERY_KEY = ["vehicle-snapshot"] as const;
 const TRIP_PAGE_QUERY_KEY = ["trip-page"] as const;
 const ALERT_PAGE_QUERY_KEY = ["alert-page"] as const;
+const ALERT_COUNTS_QUERY_KEY = ["alert-counts"] as const;
 
 export function useFleetDataset() {
+  return useQuery({
+    queryKey: FLEET_DATASET_QUERY_KEY,
+    queryFn: fetchFleetDataset,
+    staleTime: 60_000,
+  });
+}
+
+export function useFleetRealtimeSubscription(enabled = true) {
   const queryClient = useQueryClient();
   const invalidateTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const client = supabase;
     if (!client) return;
 
@@ -35,6 +47,7 @@ export function useFleetDataset() {
         queryClient.invalidateQueries({ queryKey: VEHICLE_SNAPSHOT_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: TRIP_PAGE_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ALERT_PAGE_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ALERT_COUNTS_QUERY_KEY });
         invalidateTimeoutRef.current = null;
       }, 750);
     };
@@ -66,13 +79,7 @@ export function useFleetDataset() {
       }
       client.removeChannel(channel);
     };
-  }, [queryClient]);
-
-  return useQuery({
-    queryKey: FLEET_DATASET_QUERY_KEY,
-    queryFn: fetchFleetDataset,
-    staleTime: 60_000,
-  });
+  }, [enabled, queryClient]);
 }
 
 export function useVehicleQueue(search: string, limit = 25, enabled = true) {
@@ -126,6 +133,14 @@ export function useAlertPage({
   });
 }
 
+export function useAlertStatusCounts() {
+  return useQuery({
+    queryKey: ALERT_COUNTS_QUERY_KEY,
+    queryFn: fetchAlertStatusCounts,
+    staleTime: 30_000,
+  });
+}
+
 export function useVehicleSnapshot(vehicleId: string) {
   return useQuery({
     queryKey: [...VEHICLE_SNAPSHOT_QUERY_KEY, vehicleId],
@@ -146,6 +161,7 @@ export function useUpdateAlertStatus() {
       queryClient.invalidateQueries({ queryKey: VEHICLE_QUEUE_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: VEHICLE_SNAPSHOT_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ALERT_PAGE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ALERT_COUNTS_QUERY_KEY });
     },
   });
 }

@@ -1,7 +1,7 @@
 import { Battery, Fuel, Gauge, MapPin, Power, Route, Timer, User } from "lucide-react";
 import type { FleetAlert, TelemetryPoint, Trip, Vehicle } from "@/features/fleet/types";
-import { formatRelativeTime } from "@/features/fleet";
-import { AlertSeverityBadge, VehicleStatusBadge } from "./status-badge";
+import { formatRelativeTime, useUpdateAlertStatus } from "@/features/fleet";
+import { AlertSeverityBadge, AlertStatusBadge, VehicleStatusBadge } from "./status-badge";
 
 interface VehicleDetailPanelProps {
   vehicle?: Vehicle;
@@ -9,6 +9,7 @@ interface VehicleDetailPanelProps {
   alerts: FleetAlert[];
   telemetry: TelemetryPoint[];
   compact?: boolean;
+  showAlertActions?: boolean;
 }
 
 export function VehicleDetailPanel({
@@ -17,7 +18,10 @@ export function VehicleDetailPanel({
   alerts,
   telemetry,
   compact = false,
+  showAlertActions = false,
 }: VehicleDetailPanelProps) {
+  const updateAlertStatus = useUpdateAlertStatus();
+
   if (!vehicle) {
     return (
       <div className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
@@ -59,6 +63,20 @@ export function VehicleDetailPanel({
           value={`${latestTelemetry?.speedKph ?? 0} km/h`}
         />
         <DetailItem icon={Timer} label="Last seen" value={formatRelativeTime(vehicle.lastSeenAt)} />
+        {!compact && (
+          <DetailItem
+            icon={Route}
+            label="Odometer"
+            value={`${vehicle.odometerKm.toLocaleString()} km`}
+          />
+        )}
+        {!compact && (
+          <DetailItem
+            icon={MapPin}
+            label="Coordinates"
+            value={`${vehicle.currentLocation.lat.toFixed(4)}, ${vehicle.currentLocation.lng.toFixed(4)}`}
+          />
+        )}
       </div>
 
       {trip && (
@@ -82,12 +100,43 @@ export function VehicleDetailPanel({
         <div className="space-y-2">
           <p className="text-sm font-semibold">Open issues</p>
           {vehicleAlerts.map((alert) => (
-            <div
-              key={alert.id}
-              className="flex items-center justify-between gap-3 rounded-md bg-muted/45 p-2"
-            >
-              <span className="text-sm">{alert.title}</span>
-              <AlertSeverityBadge severity={alert.severity} />
+            <div key={alert.id} className="space-y-3 rounded-md bg-muted/45 p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{alert.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{alert.description}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <AlertSeverityBadge severity={alert.severity} />
+                  <AlertStatusBadge status={alert.status} />
+                </div>
+              </div>
+              {showAlertActions && (
+                <div className="flex flex-wrap gap-2">
+                  {alert.status === "open" && (
+                    <button
+                      type="button"
+                      disabled={updateAlertStatus.isPending}
+                      onClick={() =>
+                        updateAlertStatus.mutate({ alertId: alert.id, status: "acknowledged" })
+                      }
+                      className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition-smooth hover:bg-accent disabled:opacity-50"
+                    >
+                      Acknowledge
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={updateAlertStatus.isPending}
+                    onClick={() =>
+                      updateAlertStatus.mutate({ alertId: alert.id, status: "resolved" })
+                    }
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-smooth hover:opacity-90 disabled:opacity-50"
+                  >
+                    Resolve
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -1,7 +1,7 @@
 import { divIcon } from "leaflet";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import type { Trip, Vehicle } from "@/features/fleet/types";
 import { VehicleStatusBadge } from "./status-badge";
 
@@ -122,6 +122,7 @@ export function FleetMap({
         scrollWheelZoom
         className="z-0 h-full w-full"
       >
+        <MapViewport center={center} routePositions={routePositions} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -163,4 +164,25 @@ export function FleetMap({
       </MapContainer>
     </div>
   );
+}
+
+function MapViewport({
+  center,
+  routePositions,
+}: {
+  center: { lat: number; lng: number };
+  routePositions: [number, number][];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (routePositions.length > 1) {
+      map.fitBounds(routePositions, { padding: [36, 36], maxZoom: 14 });
+      return;
+    }
+
+    map.setView([center.lat, center.lng], 13);
+  }, [center.lat, center.lng, map, routePositions]);
+
+  return null;
 }

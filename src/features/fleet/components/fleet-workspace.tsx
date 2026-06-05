@@ -23,6 +23,9 @@ interface FleetWorkspaceProps {
   routeSummary?: ReactNode;
   mapHeightClassName?: string;
   listHeightClassName?: string;
+  focusedVehicleMode?: boolean;
+  showAlertActions?: boolean;
+  detailCompact?: boolean;
 }
 
 export function FleetWorkspace({
@@ -42,6 +45,9 @@ export function FleetWorkspace({
   routeSummary,
   mapHeightClassName,
   listHeightClassName = "max-h-[480px]",
+  focusedVehicleMode = false,
+  showAlertActions = false,
+  detailCompact = true,
 }: FleetWorkspaceProps) {
   const { data: selectedSnapshot } = useVehicleSnapshot(selectedVehicleId);
   const hydratedVehicle = selectedSnapshot?.vehicles[0] ?? selectedVehicle;
@@ -52,6 +58,8 @@ export function FleetWorkspace({
     hydratedVehicle && !vehicles.some((vehicle) => vehicle.id === hydratedVehicle.id)
       ? [hydratedVehicle, ...vehicles]
       : vehicles;
+  const visibleMapVehicles =
+    focusedVehicleMode && hydratedVehicle ? [hydratedVehicle] : mapVehicles;
 
   return (
     <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -62,7 +70,7 @@ export function FleetWorkspace({
         className="xl:sticky xl:top-20"
       >
         <FleetMap
-          vehicles={mapVehicles}
+          vehicles={visibleMapVehicles}
           selectedVehicleId={selectedVehicleId}
           selectedTrip={hydratedTrip}
           onVehicleSelect={onVehicleSelect}
@@ -90,7 +98,8 @@ export function FleetWorkspace({
             trip={hydratedTrip}
             alerts={hydratedAlerts}
             telemetry={hydratedTelemetry}
-            compact
+            compact={detailCompact}
+            showAlertActions={showAlertActions}
           />
         </ChartCard>
       </div>

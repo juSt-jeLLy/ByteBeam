@@ -3,28 +3,40 @@ import { ChartCard } from "@/components/dashboard/ChartCard";
 import { Skeleton } from "@/components/dashboard/Skeleton";
 import { PageHeader } from "@/features/shared/components";
 import { ExportCsvButton } from "@/features/shared/export";
-import { computeTripEfficiency, useFleetDataset } from "@/features/fleet";
+import { computeTripEfficiency, useTripPage } from "@/features/fleet";
 import { ChartLimitControl } from "@/features/fleet/components/chart-limit-control";
 import { TripTable } from "@/features/fleet/components/trip-table";
-import { useSetTripChartLimit, useTripChartLimit, useTripDateFrom, useTripDateTo } from "@/store";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import {
+  useSetTripChartLimit,
+  useTripChartLimit,
+  useTripDateFrom,
+  useTripDateTo,
+  useTripSearch,
+  useTripSortKey,
+} from "@/store";
 
 export function TripsPage() {
-  const { data, isLoading } = useFleetDataset();
   const dateFrom = useTripDateFrom();
   const dateTo = useTripDateTo();
+  const tripSearch = useTripSearch();
+  const debouncedTripSearch = useDebouncedValue(tripSearch).trim();
+  const tripSortKey = useTripSortKey();
   const tripChartLimit = useTripChartLimit();
   const setTripChartLimit = useSetTripChartLimit();
-
-  if (isLoading || !data) return <Skeleton className="h-96 w-full" />;
-
-  const filteredTrips = data.trips.filter((trip) => {
-    const tripDate = trip.startedAt.slice(0, 10);
-    if (dateFrom && tripDate < dateFrom) return false;
-    if (dateTo && tripDate > dateTo) return false;
-    return true;
+  const { data: chartTrips, isLoading: isChartLoading } = useTripPage({
+    search: debouncedTripSearch,
+    dateFrom,
+    dateTo,
+    sortKey: tripSortKey,
+    page: 0,
+    pageSize: tripChartLimit,
   });
-  const efficiency = computeTripEfficiency(filteredTrips, data.vehicles);
-  const chartEfficiency = efficiency.slice(0, tripChartLimit);
+
+  const chartEfficiency = computeTripEfficiency(
+    chartTrips?.trips ?? [],
+    chartTrips?.vehicles ?? [],
+  );
 
   return (
     <div className="space-y-6">
@@ -33,7 +45,7 @@ export function TripsPage() {
           title="Trips"
           description="Trip history, speed behavior, route efficiency, and idle hotspots."
         />
-        <ExportCsvButton fileName="bytebeam-trip-efficiency.csv" rows={efficiency} />
+        <ExportCsvButton fileName="bytebeam-trip-efficiency.csv" rows={chartEfficiency} />
       </div>
 
       <ChartCard
@@ -41,17 +53,21 @@ export function TripsPage() {
         description="Latest matching trips, capped for chart readability"
         action={<ChartLimitControl value={tripChartLimit} onChange={setTripChartLimit} />}
       >
-        <ResponsiveContainer width="100%" height={340}>
-          <BarChart data={chartEfficiency} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="vehicle" tick={{ fontSize: 11 }} />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="distanceKm" fill="#0f766e" name="Distance km" />
-            <Bar dataKey="idleMinutes" fill="#f59e0b" name="Idle minutes" />
-            <Bar dataKey="overspeedEvents" fill="#dc2626" name="Overspeed events" />
-          </BarChart>
-        </ResponsiveContainer>
+        {isChartLoading ? (
+          <Skeleton className="h-[340px] w-full" />
+        ) : (
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={chartEfficiency} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="vehicle" tick={{ fontSize: 11 }} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="distanceKm" fill="#0f766e" name="Distance km" />
+              <Bar dataKey="idleMinutes" fill="#f59e0b" name="Idle minutes" />
+              <Bar dataKey="overspeedEvents" fill="#dc2626" name="Overspeed events" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </ChartCard>
 
       <ChartCard title="Trip Log" description="Sortable trip records for operations review">

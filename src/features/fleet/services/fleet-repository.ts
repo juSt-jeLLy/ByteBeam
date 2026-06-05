@@ -17,6 +17,12 @@ const DASHBOARD_TRIP_LIMIT = 200;
 const DASHBOARD_ALERT_LIMIT = 200;
 const VEHICLE_QUEUE_LIMIT = 25;
 
+export interface AlertStatusCounts {
+  open: number;
+  acknowledged: number;
+  resolved: number;
+}
+
 interface VehicleRow {
   id: string;
   registration: string;
@@ -412,6 +418,37 @@ export async function fetchAlertPage({
     totalCount: alerts.count ?? alertRows.length,
     page,
     pageSize,
+  };
+}
+
+export async function fetchAlertStatusCounts(): Promise<AlertStatusCounts> {
+  if (!supabase) throw new Error("Supabase is not configured.");
+
+  const [open, acknowledged, resolved] = await Promise.all([
+    supabase.from("fleet_alerts").select("id", { count: "exact", head: true }).eq("status", "open"),
+    supabase
+      .from("fleet_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "acknowledged"),
+    supabase
+      .from("fleet_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "resolved"),
+  ]);
+
+  if (open.error || acknowledged.error || resolved.error) {
+    throw new Error(
+      open.error?.message ??
+        acknowledged.error?.message ??
+        resolved.error?.message ??
+        "Unable to load alert counts",
+    );
+  }
+
+  return {
+    open: open.count ?? 0,
+    acknowledged: acknowledged.count ?? 0,
+    resolved: resolved.count ?? 0,
   };
 }
 

@@ -1,13 +1,15 @@
 import { ArrowUpDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { getVehicleForTrip } from "@/features/fleet";
 import { useTripPage } from "@/features/fleet/hooks/use-fleet-query";
 import {
+  useSetTripPage,
   useSetTripDateFrom,
   useSetTripDateTo,
   useSetTripSearch,
   useSetTripSortKey,
   useTripDateFrom,
+  useTripPageIndex,
   useTripDateTo,
   useTripSearch,
   useTripSortKey,
@@ -26,11 +28,12 @@ export function TripTable() {
   const dateTo = useTripDateTo();
   const setDateFrom = useSetTripDateFrom();
   const setDateTo = useSetTripDateTo();
-  const [page, setPage] = useState(0);
+  const page = useTripPageIndex();
+  const setPage = useSetTripPage();
 
   useEffect(() => {
     setPage(0);
-  }, [dateFrom, dateTo, debouncedQuery, sortKey]);
+  }, [dateFrom, dateTo, debouncedQuery, setPage, sortKey]);
 
   const { data, isFetching, isError } = useTripPage({
     search: debouncedQuery,
@@ -127,7 +130,7 @@ export function TripTable() {
           <button
             type="button"
             disabled={page === 0 || isFetching}
-            onClick={() => setPage((current) => Math.max(0, current - 1))}
+            onClick={() => setPage(Math.max(0, page - 1))}
             className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
           >
             Previous
@@ -135,7 +138,7 @@ export function TripTable() {
           <button
             type="button"
             disabled={page + 1 >= totalPages || isFetching}
-            onClick={() => setPage((current) => current + 1)}
+            onClick={() => setPage(page + 1)}
             className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
           >
             Next

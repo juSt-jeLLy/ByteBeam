@@ -2,11 +2,13 @@ import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { useFleetRealtimeSubscription } from "@/features/fleet";
 
 /** Standard authenticated dashboard shell. */
 export function AppShell() {
   const { pathname } = useLocation();
   const { session, isLoading } = useAuth();
+  useFleetRealtimeSubscription(Boolean(session) && pathname !== "/login");
 
   if (pathname === "/login") return <Outlet />;
 

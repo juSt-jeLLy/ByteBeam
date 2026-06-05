@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Search } from "lucide-react";
 import { ChartCard } from "@/components/dashboard/ChartCard";
-import { Skeleton } from "@/components/dashboard/Skeleton";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PageHeader } from "@/features/shared/components";
 import {
   formatRelativeTime,
   useAlertPage,
-  useFleetDataset,
+  useAlertStatusCounts,
   useUpdateAlertStatus,
 } from "@/features/fleet";
 import { AlertSeverityBadge, AlertStatusBadge } from "@/features/fleet/components/status-badge";
@@ -16,7 +15,9 @@ import { cn } from "@/lib/utils";
 import {
   type AlertFilter,
   useAlertFilter,
+  useAlertPageIndex,
   useAlertSearch,
+  useSetAlertPage,
   useSetAlertFilter,
   useSetAlertSearch,
 } from "@/store";
@@ -30,8 +31,8 @@ const ALERT_FILTERS: Array<{ value: AlertFilter; label: string }> = [
 ];
 
 export function AlertsPage() {
-  const { data, isLoading } = useFleetDataset();
-  const [page, setPage] = useState(0);
+  const page = useAlertPageIndex();
+  const setPage = useSetAlertPage();
   const alertSearch = useAlertSearch();
   const setAlertSearch = useSetAlertSearch();
   const alertFilter = useAlertFilter();
@@ -43,17 +44,16 @@ export function AlertsPage() {
     page,
     pageSize: ALERT_PAGE_SIZE,
   });
+  const { data: alertCounts } = useAlertStatusCounts();
   const updateAlertStatus = useUpdateAlertStatus();
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedAlertSearch, alertFilter]);
+  }, [debouncedAlertSearch, alertFilter, setPage]);
 
-  if (isLoading || !data) return <Skeleton className="h-96 w-full" />;
-
-  const open = data.alerts.filter((alert) => alert.status === "open").length;
-  const acknowledged = data.alerts.filter((alert) => alert.status === "acknowledged").length;
-  const resolved = data.alerts.filter((alert) => alert.status === "resolved").length;
+  const open = alertCounts?.open ?? 0;
+  const acknowledged = alertCounts?.acknowledged ?? 0;
+  const resolved = alertCounts?.resolved ?? 0;
 
   return (
     <div className="space-y-6">
@@ -170,7 +170,7 @@ export function AlertsPage() {
             <button
               type="button"
               disabled={page === 0 || isAlertPageFetching}
-              onClick={() => setPage((current) => Math.max(0, current - 1))}
+              onClick={() => setPage(Math.max(0, page - 1))}
               className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
             >
               Previous
@@ -181,7 +181,7 @@ export function AlertsPage() {
                 page + 1 >= Math.ceil((alertPage?.totalCount ?? 0) / ALERT_PAGE_SIZE) ||
                 isAlertPageFetching
               }
-              onClick={() => setPage((current) => current + 1)}
+              onClick={() => setPage(page + 1)}
               className="rounded-md border border-border px-3 py-1.5 font-medium transition-smooth hover:bg-accent disabled:opacity-50"
             >
               Next

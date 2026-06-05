@@ -17,6 +17,8 @@ interface AppStore {
   tripChartLimit: ChartLimit;
   alertSearch: string;
   alertFilter: AlertFilter;
+  tripPage: number;
+  alertPage: number;
   setMobileDrawerOpen: (open: boolean) => void;
   setGlobalSearch: (search: string) => void;
   setSelectedVehicleId: (vehicleId: string) => void;
@@ -28,6 +30,8 @@ interface AppStore {
   setTripChartLimit: (limit: ChartLimit) => void;
   setAlertSearch: (search: string) => void;
   setAlertFilter: (filter: AlertFilter) => void;
+  setTripPage: (page: number) => void;
+  setAlertPage: (page: number) => void;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -45,6 +49,8 @@ export const useAppStore = create<AppStore>()(
         tripChartLimit: 12,
         alertSearch: "",
         alertFilter: "all",
+        tripPage: 0,
+        alertPage: 0,
         setMobileDrawerOpen: (mobileDrawerOpen) => set({ mobileDrawerOpen }),
         setGlobalSearch: (globalSearch) => set({ globalSearch }),
         setSelectedVehicleId: (selectedVehicleId) => set({ selectedVehicleId }),
@@ -56,6 +62,8 @@ export const useAppStore = create<AppStore>()(
         setTripChartLimit: (tripChartLimit) => set({ tripChartLimit }),
         setAlertSearch: (alertSearch) => set({ alertSearch }),
         setAlertFilter: (alertFilter) => set({ alertFilter }),
+        setTripPage: (tripPage) => set({ tripPage }),
+        setAlertPage: (alertPage) => set({ alertPage }),
       }),
       { name: "bytebeam-fleet-store" },
     ),
@@ -74,6 +82,8 @@ export const useVehicleChartLimit = () => useAppStore((state) => state.vehicleCh
 export const useTripChartLimit = () => useAppStore((state) => state.tripChartLimit);
 export const useAlertSearch = () => useAppStore((state) => state.alertSearch);
 export const useAlertFilter = () => useAppStore((state) => state.alertFilter);
+export const useTripPageIndex = () => useAppStore((state) => state.tripPage);
+export const useAlertPageIndex = () => useAppStore((state) => state.alertPage);
 export const useSetMobileDrawerOpen = () => useAppStore((state) => state.setMobileDrawerOpen);
 export const useSetGlobalSearch = () => useAppStore((state) => state.setGlobalSearch);
 export const useSetSelectedVehicleId = () => useAppStore((state) => state.setSelectedVehicleId);
@@ -85,3 +95,5 @@ export const useSetVehicleChartLimit = () => useAppStore((state) => state.setVeh
 export const useSetTripChartLimit = () => useAppStore((state) => state.setTripChartLimit);
 export const useSetAlertSearch = () => useAppStore((state) => state.setAlertSearch);
 export const useSetAlertFilter = () => useAppStore((state) => state.setAlertFilter);
+export const useSetTripPage = () => useAppStore((state) => state.setTripPage);
+export const useSetAlertPage = () => useAppStore((state) => state.setAlertPage);

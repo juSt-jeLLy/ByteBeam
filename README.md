@@ -297,6 +297,105 @@ Relevant files:
 9. When a Supabase row changes, the realtime socket receives the event.
 10. The app throttles query invalidation and refreshes the relevant cached views.
 
+## Project Structure
+
+The codebase is organized by product feature so the dashboard is easier to review and explain.
+
+```text
+.
+├── AI_CHAT_LOGS.md
+├── README.md
+├── supabase-schema.sql
+├── src
+│   ├── components
+│   │   ├── dashboard
+│   │   │   ├── ChartCard.tsx
+│   │   │   ├── EmptyState.tsx
+│   │   │   ├── Skeleton.tsx
+│   │   │   └── StatCard.tsx
+│   │   └── ui
+│   │       └── shared shadcn-style UI primitives
+│   ├── features
+│   │   ├── auth
+│   │   │   └── AuthProvider.tsx
+│   │   ├── fleet
+│   │   │   ├── components
+│   │   │   │   ├── chart-limit-control.tsx
+│   │   │   │   ├── fleet-map.tsx
+│   │   │   │   ├── fleet-workspace.tsx
+│   │   │   │   ├── selected-route-summary.tsx
+│   │   │   │   ├── status-badge.tsx
+│   │   │   │   ├── trip-table.tsx
+│   │   │   │   ├── vehicle-detail-panel.tsx
+│   │   │   │   └── vehicle-list.tsx
+│   │   │   ├── hooks
+│   │   │   │   └── use-fleet-query.ts
+│   │   │   ├── page-models
+│   │   │   │   ├── use-alerts-page-model.ts
+│   │   │   │   ├── use-fleet-dashboard-page-model.ts
+│   │   │   │   ├── use-login-page-model.ts
+│   │   │   │   ├── use-map-page-model.ts
+│   │   │   │   └── use-trips-page-model.ts
+│   │   │   ├── pages
+│   │   │   │   ├── alerts-page.tsx
+│   │   │   │   ├── fleet-dashboard-page.tsx
+│   │   │   │   ├── login-page.tsx
+│   │   │   │   ├── map-page.tsx
+│   │   │   │   └── trips-page.tsx
+│   │   │   ├── services
+│   │   │   │   ├── fleet-analytics.ts
+│   │   │   │   └── fleet-repository.ts
+│   │   │   └── types.ts
+│   │   ├── layout
+│   │   │   ├── AppShell.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── TopBar.tsx
+│   │   │   └── navConfig.ts
+│   │   ├── settings
+│   │   │   ├── page-models
+│   │   │   │   └── use-settings-page-model.ts
+│   │   │   └── pages
+│   │   │       └── settings-page.tsx
+│   │   ├── shared
+│   │   │   ├── components
+│   │   │   └── export
+│   │   └── theme
+│   │       ├── ThemeProvider.tsx
+│   │       └── ThemeToggle.tsx
+│   ├── hooks
+│   │   ├── use-debounced-value.ts
+│   │   └── use-mobile.tsx
+│   ├── lib
+│   │   ├── supabase.ts
+│   │   └── utils.ts
+│   ├── routes
+│   │   ├── __root.tsx
+│   │   ├── alerts.tsx
+│   │   ├── dashboard.tsx
+│   │   ├── index.tsx
+│   │   ├── login.tsx
+│   │   ├── map.tsx
+│   │   ├── settings.tsx
+│   │   └── trips.tsx
+│   ├── store
+│   │   └── index.ts
+│   ├── main.tsx
+│   ├── router.tsx
+│   └── styles.css
+├── package.json
+├── vite.config.ts
+└── vercel.json
+```
+
+### Structure Decisions
+
+- `features/fleet/services` contains Supabase repository functions and analytics helpers.
+- `features/fleet/hooks` contains TanStack Query hooks and Supabase Realtime subscription logic.
+- `features/fleet/page-models` contains page-level state composition, derived values, and handlers.
+- `features/fleet/pages` stays mostly presentational so screens are easier to explain.
+- `store/index.ts` owns Zustand UI state shared across pages.
+- `supabase-schema.sql` owns the database schema, indexes, RLS policies, realtime setup, and seed data.
+
 ## Supabase Backend Structure
 
 The full schema and seed data are in:

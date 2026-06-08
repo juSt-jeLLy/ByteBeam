@@ -54,7 +54,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Design the Supabase backend for this connected-fleet prototype from scratch. I need table creation SQL, realistic persisted seed data, indexes, RLS policies, and realtime setup. Model vehicles, trips, alerts, and telemetry in a way that supports the dashboard, vehicle search, route inspection, trip log, and alert workflow. Include fields like registration, driver, status, fuel/battery, ignition, current coordinates, last seen, trip distance/duration/speed/idle/halts/overspeed, route points, and alert status. Also explain why each table exists and what tradeoffs we are making for a prototype versus a production telemetry system.
+> Design the Supabase backend for this connected-fleet prototype from scratch. I need table creation SQL, realistic persisted seed data, indexes, RLS policies, and realtime setup. Model vehicles, trips, alerts, and telemetry in a way that supports the dashboard, vehicle search, route inspection, trip log, and alert workflow. Be explicit about the columns: for vehicles include registration, model, driver, status, ignition, energy type/level, odometer, last seen, location name, and current lat/lng; for trips include vehicle id, start/end time, start/end location, distance, duration, average/max speed, idle minutes, halt count, overspeed events, and route points; for alerts include vehicle id, title, description, severity, workflow status, and created time; for telemetry include vehicle id, recorded time, lat/lng, speed, ignition, and energy. Also tell me what to index and why: vehicle status/last seen for dashboard, registration/model/driver/location trigram indexes for search, trip vehicle/start time for recent routes, alert vehicle/status/created time for queues, and telemetry vehicle/recorded time for selected-vehicle snapshots. Explain why each table exists and what tradeoffs we are making for a prototype versus a production telemetry system.
 
 **AI-assisted output:**
 
@@ -66,7 +66,7 @@ My workflow was:
 - Generated realistic fleet seed data with Bengaluru vehicle registrations, drivers, status, fuel/battery levels, ignition state, coordinates, trip summaries, route points, alerts, and telemetry points.
 - Added RLS policies for authenticated users.
 - Added Supabase Realtime publication setup.
-- Added indexes for status, last-seen time, trip sorting, alert filtering, telemetry lookup, and trigram search.
+- Added indexes for vehicle status/last-seen dashboard queries, trip vehicle/start-time lookups, alert status/created-time queues, telemetry vehicle/recorded-time snapshots, and trigram search on vehicle/trip text fields.
 
 **Decision I made:**
 
@@ -74,6 +74,7 @@ My workflow was:
 - Keep summarized trips in `trips` for readable operations review.
 - Store compact route geometry in `trips.route_points` JSONB for prototype route rendering.
 - Keep `telemetry_points` as a realistic domain table for latest telemetry context and future ingestion.
+- Add targeted indexes based on actual access patterns instead of indexing randomly.
 - Use RLS with authenticated access for assignment scope, while documenting that production would need organization and role scoping.
 
 **Files created/updated:**
@@ -374,15 +375,15 @@ Found and fixed multiple issues:
 - `src/features/settings/pages/settings-page.tsx`
 - `README.md`
 
-### 13. Page-Model Refactor For Explainability
+### 13. Scalable Codebase Structure From The Start
 
 **Prompt I gave:**
 
-> Refactor the page files for explainability. Anything that is business logic, data composition, derived metrics, search/filter/page state, mutation handlers, or row shaping should move out of TSX page files into typed `.ts` page-model hooks. Keep the pages mostly as UI render functions that consume a `model`. Do this across dashboard, trips, alerts, map, login, and settings so the architecture is easy to explain in an interview.
+> While building the dashboard, keep the codebase scalable from the start instead of putting everything directly inside page TSX files. Use a feature-based structure with `components`, `hooks`, `services`, `page-models`, `pages`, and `types`. Put Supabase access in repository/service files, TanStack Query hooks in hook files, derived page state and handlers in page-model `.ts` files, shared UI state in Zustand, and visual rendering in TSX components/pages. I want the final code to be easy to explain in an interview: pages should mostly consume a model and render UI, while business logic, data composition, search/filter/page state, mutation handlers, and row shaping live in typed `.ts` files.
 
 **AI-assisted output:**
 
-Created page-model hooks:
+Created a scalable feature structure and page-model hooks:
 
 - `use-fleet-dashboard-page-model.ts`
 - `use-trips-page-model.ts`
@@ -393,8 +394,9 @@ Created page-model hooks:
 
 **Decision I made:**
 
+- Build with a feature/service/hook/component structure from the beginning rather than leaving a late cleanup for the end.
 - Keep TSX files presentation-focused.
-- Put data composition and interaction handlers in typed hooks.
+- Put Supabase access, data composition, derived state, and interaction handlers in typed `.ts` files.
 - Make the architecture easier to discuss during review.
 
 **Files created/updated:**

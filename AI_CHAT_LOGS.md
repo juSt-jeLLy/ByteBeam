@@ -2,7 +2,7 @@
 
 This file documents how AI assistance was used while building the Bytebeam Fleet Operations Dashboard.
 
-The purpose of this log is to show a thoughtful AI-assisted engineering process: clear prompts, reviewed outputs, product reasoning, architecture decisions, tradeoffs, bugs found, and improvements made. The prompts below are written as the actual type of direction given during the build: specific requirements, constraints, follow-up questions, and review requests.
+The purpose of this log is to show a thoughtful AI-assisted engineering process: clear prompts, reviewed outputs, product reasoning, architecture decisions, tradeoffs, bugs found, and improvements made. When I was asking for exploration, the prompts were intentionally open-ended so I could compare options and make the final decision. When I was asking for implementation, the prompts were precise and constraint-heavy: I specified TanStack Query, Zustand, Supabase Realtime, debouncing, throttling, indexing, server-side pagination/search, and the expected product behavior.
 
 ## AI Tools Used
 
@@ -17,8 +17,8 @@ My workflow was:
 1. Provide the assignment requirements and product constraints.
 2. Ask for product interpretation and feature prioritization.
 3. Ask for backend schema options and tradeoffs.
-4. Ask for implementation help in small scoped tasks.
-5. Review generated code and ask follow-up questions about gaps.
+4. Give precise implementation prompts for features such as TanStack Query, Zustand, Realtime, debouncing, throttling, indexing, and pagination.
+5. Review generated code and ask follow-up questions about gaps, bugs, missing concepts, or product confusion.
 6. Ask the assistant to audit whether key concepts were fully implemented.
 7. Fix bugs and incomplete areas found during review.
 8. Run formatting/build validation.
@@ -30,7 +30,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> I am building a Bytebeam fleet dashboard for an internal operations team. The assignment needs login, protected dashboard, Supabase backend, realistic fleet data, and a central map. Help me decide what the actual product surface should be, which vehicle/trip parameters matter, and how to avoid making it look like a marketing page.
+> I am building a Bytebeam fleet dashboard for an internal operations team. The assignment requires login, protected dashboard access, Supabase as backend, realistic persisted fleet data, and a map-centered experience. I want to first reason through the product, not code immediately. Tell me what product surface would actually help an operations user, what vehicle/trip parameters are worth showing, what should be prioritized on the dashboard, and what should be avoided so the app does not become a generic marketing page.
 
 **AI-assisted output:**
 
@@ -54,7 +54,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Design a Supabase schema for a connected fleet prototype. I need persisted data that feels realistic, not static frontend mock data. Include vehicles, trips, route history, telemetry points, alerts, useful indexes, RLS, realtime setup, and seed data. Explain the tradeoffs.
+> Design the Supabase backend for this connected-fleet prototype from scratch. I need table creation SQL, realistic persisted seed data, indexes, RLS policies, and realtime setup. Model vehicles, trips, alerts, and telemetry in a way that supports the dashboard, vehicle search, route inspection, trip log, and alert workflow. Include fields like registration, driver, status, fuel/battery, ignition, current coordinates, last seen, trip distance/duration/speed/idle/halts/overspeed, route points, and alert status. Also explain why each table exists and what tradeoffs we are making for a prototype versus a production telemetry system.
 
 **AI-assisted output:**
 
@@ -86,7 +86,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Implement Supabase Auth for email/password login. The app should protect the dashboard routes, redirect unauthenticated users to login, and work with the demo user. Also explain what happens with wrong credentials and whether another Supabase Auth user can sign in.
+> Implement real Supabase email/password authentication, not a fake demo-mode login. The app should have a minimal login page, protected dashboard routes, session loading, auth-state subscription, sign-out, and redirect behavior for unauthenticated users. Use the demo user for review credentials, but do not hardcode access to only that email. Also explain how wrong credentials behave and whether a newly created Supabase Auth user can use the app under the current RLS policy.
 
 **AI-assisted output:**
 
@@ -113,7 +113,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Build the main dashboard around real operations questions. It should show fleet health, vehicle location, recent routes, vehicle details, and alerts. Explain why each element exists and how it helps an operations user.
+> Build the main dashboard as the fleet-wide operations overview. It should help an operator quickly understand fleet size, active vehicles, open alerts, average fuel/battery, where vehicles are on the map, which vehicle is selected, what its recent route/details are, and whether usage patterns like idle time or overspeeding need attention. Keep the map central, add a vehicle queue for selecting vehicles, add useful charts, and include CSV export where it makes operational sense. Do not add decorative sections that do not help an internal operator.
 
 **AI-assisted output:**
 
@@ -143,7 +143,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Use a real map library. On the dashboard I want all relevant vehicles visible. On the Live Map page, when I select one vehicle, I should see only that vehicle, its route, telemetry, and alerts. Add route playback if useful.
+> Use a real map library, not a fake static map. On the dashboard, show the fleet-wide map with vehicle markers so operations can see where vehicles are. On the Live Map page, make it a focused vehicle-inspection workspace: when I select one vehicle, the map should show only that vehicle, its latest/current location, its route polyline, route playback if useful, and a details panel with telemetry, route, driver, location, fuel/battery, ignition, and open alerts. Alert actions should be available from this focused page.
 
 **AI-assisted output:**
 
@@ -171,7 +171,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Vehicle Queue should let me search by vehicle number. It cannot load every vehicle if the fleet grows to thousands or millions of rows. Add indexed server-side search, debouncing, pagination, and infinite scrolling with TanStack Query.
+> The Vehicle Queue should be a scalable vehicle selector. Add search by vehicle registration/number and supporting fields, but do not fetch the whole vehicles table and filter in React. Use Supabase server-side search with indexes, debounce the search input, use TanStack Query `useInfiniteQuery`, use range pagination, and load more vehicles as the user scrolls. This should still work conceptually if the fleet has thousands or millions of rows.
 
 **AI-assisted output:**
 
@@ -198,7 +198,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Trip Log should show 10 records per page, support search, date filtering, and sorting. Do not fetch all trips and filter on the client. The chart should stay useful if there are hundreds of vehicles.
+> The Trips page needs to be scalable and useful. Trip Log should show 10 records per page, support debounced search, date-from/date-to filters, sortable columns, and server-side pagination. Do not load all trips and then filter locally. Push search, date filtering, sorting, and pagination into Supabase queries. Also make the trip chart readable for large datasets by adding chart scope/limit controls instead of rendering every vehicle or trip.
 
 **AI-assisted output:**
 
@@ -226,7 +226,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Alerts should support filtering and search by vehicle number. Add open, acknowledged, and resolved filters. Add acknowledge and resolve actions. Resolved alerts should not stay at the top like active issues.
+> Build the Alerts page as an operations workflow, not just a static list. Add status filters for All, Open, Acknowledged, and Resolved. Add search by vehicle registration/number and related vehicle fields. Use debounced search and server-side pagination with 10 rows per page. Add acknowledge and resolve actions backed by Supabase mutations. Keep active issues prioritized so resolved alerts do not dominate the queue.
 
 **AI-assisted output:**
 
@@ -254,7 +254,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Check the whole app. I want TanStack Query for Supabase server/cache state and Zustand for shared UI state. Make sure search, filters, selected vehicle, pages, chart limits, realtime, debouncing, and throttling are consistently applied.
+> Audit the whole app architecture. I want TanStack Query to own Supabase server/cache state and Zustand to own shared UI state. Check every page and component for consistency: selected vehicle, global vehicle search, trip filters, alert filters, pagination, chart limits, mobile drawer, realtime subscriptions, debounced inputs, throttled invalidation, and mutation refreshes. Tell me if anything is half-applied or incorrectly mixed, then fix the code so the concepts are applied consistently across the dashboard.
 
 **AI-assisted output:**
 
@@ -293,7 +293,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Are we subscribed to real-time updates from Supabase? If a vehicle location changes in Supabase, should the map update? Explain how this is implemented and how to test it.
+> Verify Supabase Realtime end to end. I want vehicles, trips, fleet alerts, and telemetry changes to refresh the app. If I update a vehicle location or energy value in Supabase SQL editor, the map/details should update through query invalidation. Check the code, explain how the realtime WebSocket works, explain why `101 Switching Protocols` is expected, add throttling so many realtime events do not spam refetches, and give me SQL queries to test realtime updates.
 
 **AI-assisted output:**
 
@@ -321,7 +321,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Check the UI and fix issues: map/header overlap while scrolling, too much empty space, vehicle cards too tall, and duplicated behavior between Dashboard and Live Map.
+> Review the UI like a product reviewer. I see map/header overlap while scrolling, too much empty space in some layouts, vehicle cards that feel too tall, and repeated behavior between Dashboard and Live Map. Fix the layout and product structure: Dashboard should be a fleet overview, Live Map should be vehicle inspection, map controls should not overlap the sticky header, and Vehicle Queue should be compact enough for operations use.
 
 **AI-assisted output:**
 
@@ -347,7 +347,7 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Check the whole codebase and tell me if any concepts are half applied. Check login, Zustand, TanStack Query, realtime, debouncing, throttling, Supabase querying, and page/component structure.
+> Do a final codebase audit before submission. Check if login, Supabase Auth, TanStack Query, Zustand, realtime subscriptions, throttled invalidation, debounced search, server-side Supabase queries, pagination, infinite scrolling, indexes, chart limits, and page/component boundaries are fully applied. If you find bugs, stale names, incorrect variables, repeated UI concepts, or logic buried inside TSX pages, identify the issue, explain why it matters, fix it, and validate the result.
 
 **AI-assisted output:**
 
@@ -380,7 +380,7 @@ Found and fixed multiple issues:
 
 **Prompt I gave:**
 
-> Move page-level logic out of TSX page files into `.ts` files so I can explain the code cleanly in an interview. Pages should mostly render UI, while hooks/models handle data, derived values, and handlers.
+> Refactor the page files for explainability. Anything that is business logic, data composition, derived metrics, search/filter/page state, mutation handlers, or row shaping should move out of TSX page files into typed `.ts` page-model hooks. Keep the pages mostly as UI render functions that consume a `model`. Do this across dashboard, trips, alerts, map, login, and settings so the architecture is easy to explain in an interview.
 
 **AI-assisted output:**
 
@@ -410,7 +410,7 @@ Created page-model hooks:
 
 **Prompt I gave:**
 
-> Write a detailed README for a job application submission. Explain what we built, why every feature exists, how it helps the operations team, how the Supabase schema is structured, technical decisions, tradeoffs, setup, realtime test SQL, file structure, AI usage, and submission checklist.
+> Write a detailed reviewer-facing README for a job application submission. It should explain what product we built, why every feature exists, how each feature helps the operations team, how the app works end to end, the full Supabase structure, RLS/realtime/indexing decisions, frontend technical decisions, TanStack Query/Zustand split, debouncing/throttling/search/pagination strategy, tradeoffs, production improvements, setup steps, realtime test SQL, project file structure, AI usage, and submission checklist.
 
 **AI-assisted output:**
 

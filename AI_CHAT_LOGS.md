@@ -1,191 +1,248 @@
-# AI Chat Logs And Usage Notes
+# AI Usage Log
 
-This file documents how AI assistance was used for the Bytebeam Fleet Operations Dashboard submission.
+This file documents how AI assistance was used while building the Bytebeam Fleet Operations Dashboard.
 
-The goal of this log is not to claim that every line below is a verbatim transcript. It is a reviewer-facing summary of the important prompts, AI-assisted outputs, engineering decisions, follow-up corrections, and validation steps used while building the project. The work was reviewed and edited manually inside the codebase before submission.
+The purpose of this log is to show a thoughtful AI-assisted engineering process: clear prompts, reviewed outputs, product reasoning, architecture decisions, tradeoffs, bugs found, and improvements made. The prompts below are written as the actual type of direction given during the build: specific requirements, constraints, follow-up questions, and review requests.
 
 ## AI Tools Used
 
-- **OpenAI Codex / ChatGPT-style coding assistant** inside the local workspace.
-- Used for assignment interpretation, product planning, Supabase schema design, code generation/refactoring, bug hunting, README writing, and submission review.
+- **OpenAI Codex / ChatGPT-style coding assistant** in the local development workspace.
 
-## How AI Was Used Responsibly
+## How I Used AI
 
-AI was used as a pair-programming assistant, not as an unchecked code generator.
+I used AI as a pair-programming and architecture-review assistant. I did not use it as a one-shot generator.
 
-The process was:
+My workflow was:
 
-1. Read the assignment requirements.
-2. Ask AI to interpret the product problem.
-3. Convert the brief into a focused internal fleet-operations product.
-4. Generate or refactor code in small chunks.
-5. Review the output against the assignment scope.
-6. Remove old-assignment leftovers.
-7. Check whether concepts were fully implemented, not only mentioned.
+1. Provide the assignment requirements and product constraints.
+2. Ask for product interpretation and feature prioritization.
+3. Ask for backend schema options and tradeoffs.
+4. Ask for implementation help in small scoped tasks.
+5. Review generated code and ask follow-up questions about gaps.
+6. Ask the assistant to audit whether key concepts were fully implemented.
+7. Fix bugs and incomplete areas found during review.
 8. Run formatting/build validation.
-9. Expand README and AI logs so the architecture and decisions are explainable.
+9. Document product, technical, and AI-usage decisions clearly for review.
 
-## Important Prompt / Result Log
+## Prompt And Result Log
 
-### 1. Assignment Reading And Product Direction
+### 1. Product Scope And Feature Prioritization
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Read the Bytebeam Frontend Assignment PDF, understand what they are asking, remove old assignment content, and rebuild the app for this assignment without breaking structure or UI quality.
+> I am building a Bytebeam fleet dashboard for an internal operations team. The assignment needs login, protected dashboard, Supabase backend, realistic fleet data, and a central map. Help me decide what the actual product surface should be, which vehicle/trip parameters matter, and how to avoid making it look like a marketing page.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-- Interpreted the assignment as an internal connected-vehicle operations dashboard.
-- Identified that the product should not be a marketing page.
-- Defined core user questions:
+- Recommended an internal operations workspace instead of a landing page.
+- Suggested a map-first dashboard because location and movement history are central to the product.
+- Prioritized the following user questions:
   - Where are vehicles now?
-  - What have vehicles recently done?
   - Which vehicles need attention?
-  - What trips/routes look inefficient or unsafe?
-- Proposed a map-first dashboard with fleet KPIs, vehicle list, route inspection, trips, alerts, and settings.
+  - What did a selected vehicle recently do?
+  - Are there low fuel/battery, offline, idle, or overspeed issues?
+  - Which trips look inefficient?
 
-**Human/product decision made:**
+**Decision I made:**
 
-- Keep the product as a coherent operations workspace rather than adding unrelated features.
-- Use Bengaluru fleet sample data to make the prototype feel plausible.
-- Make the map central, because the brief explicitly emphasizes vehicle location and movement history.
+- Build a compact but complete fleet operations product.
+- Keep the main dashboard focused on fleet-wide awareness.
+- Add a separate Live Map page for selected-vehicle inspection.
+- Avoid decorative marketing sections entirely.
 
-### 2. Supabase Backend Design
+### 2. Backend Data Model And Supabase Schema
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Give me table creation queries and data for the new Supabase database.
+> Design a Supabase schema for a connected fleet prototype. I need persisted data that feels realistic, not static frontend mock data. Include vehicles, trips, route history, telemetry points, alerts, useful indexes, RLS, realtime setup, and seed data. Explain the tradeoffs.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-Designed the Supabase schema around four core tables:
+- Proposed four core tables:
+  - `vehicles`
+  - `trips`
+  - `fleet_alerts`
+  - `telemetry_points`
+- Generated realistic fleet seed data with Bengaluru vehicle registrations, drivers, status, fuel/battery levels, ignition state, coordinates, trip summaries, route points, alerts, and telemetry points.
+- Added RLS policies for authenticated users.
+- Added Supabase Realtime publication setup.
+- Added indexes for status, last-seen time, trip sorting, alert filtering, telemetry lookup, and trigram search.
 
-- `vehicles`
-- `trips`
-- `fleet_alerts`
-- `telemetry_points`
+**Decision I made:**
 
-Generated realistic sample data for:
+- Keep current vehicle state in `vehicles` so the dashboard can render current positions quickly.
+- Keep summarized trips in `trips` for readable operations review.
+- Store compact route geometry in `trips.route_points` JSONB for prototype route rendering.
+- Keep `telemetry_points` as a realistic domain table for latest telemetry context and future ingestion.
+- Use RLS with authenticated access for assignment scope, while documenting that production would need organization and role scoping.
 
-- Vehicle registrations
-- Drivers
-- Fuel/battery levels
-- Ignition state
-- Current location
-- Last seen timestamps
-- Trip distance/duration/speed/idle/halts/overspeed
-- Route points for map rendering
-- Alert statuses and severity
-- Telemetry points
-
-**Engineering decision made:**
-
-- Store current vehicle state in `vehicles` for fast dashboard/map rendering.
-- Store summarized route history in `trips` for readable trip review.
-- Store alert workflow separately in `fleet_alerts` so issues can be acknowledged/resolved.
-- Keep `telemetry_points` to model persisted connected-device samples.
-- Use `route_points` JSONB in `trips` as a prototype tradeoff so route playback can work without a real ingestion pipeline.
-
-**Files affected:**
+**Files created/updated:**
 
 - `supabase-schema.sql`
 - `src/features/fleet/types.ts`
 - `src/features/fleet/services/fleet-repository.ts`
 
-### 3. Authentication Flow
+### 3. Authentication And Protected Routes
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Create the demo auth user and explain how login works. What happens with wrong credentials? Will new Supabase users work?
+> Implement Supabase Auth for email/password login. The app should protect the dashboard routes, redirect unauthenticated users to login, and work with the demo user. Also explain what happens with wrong credentials and whether another Supabase Auth user can sign in.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-- Explained that the demo user must be created in Supabase Auth manually.
-- Implemented Supabase Auth email/password login.
-- Added protected routes with redirect behavior.
-- Confirmed the app is not hardcoded to only `ops@bytebeam.local`.
+- Implemented Supabase session loading and auth-state subscription.
+- Added protected dashboard shell behavior.
+- Added email/password sign-in and sign-out.
+- Confirmed wrong credentials return Supabase auth errors.
+- Confirmed the app is not hardcoded to one email; any Supabase Auth user can sign in under the current RLS policy.
 
-**Engineering decision made:**
+**Decision I made:**
 
-- Use Supabase Auth directly rather than a fake local login.
-- Keep the login page minimal because the assignment asks for login, not marketing/onboarding.
-- Allow any Supabase Auth user to sign in, subject to RLS policies.
+- Use real Supabase Auth instead of fake local login.
+- Keep the login page minimal and product-focused.
+- Use the demo user only as review credentials, not as a hardcoded authorization rule.
 
-**Files affected:**
+**Files created/updated:**
 
 - `src/features/auth/AuthProvider.tsx`
 - `src/features/fleet/pages/login-page.tsx`
 - `src/features/fleet/page-models/use-login-page-model.ts`
 - `src/features/layout/AppShell.tsx`
 
-### 4. Removing Old Assignment Content
+### 4. Dashboard Product Design
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Search for hospital and all other things from the past assignment and replace/remove them.
+> Build the main dashboard around real operations questions. It should show fleet health, vehicle location, recent routes, vehicle details, and alerts. Explain why each element exists and how it helps an operations user.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-- Searched the codebase for old domain terms.
-- Removed old healthcare/hospital-style naming from the visible product.
-- Later found and fixed a stale local storage key: `hfa-theme` -> `bytebeam-theme`.
+- Built KPI cards for fleet size, active vehicles, open alerts, and average energy.
+- Added a central map with vehicle markers.
+- Added a Vehicle Queue for selecting/searching vehicles.
+- Added selected vehicle details.
+- Added trip utilization and fleet status charts.
+- Added summary metrics for distance, idle time, and overspeed events.
+- Added CSV export for trip efficiency data.
 
-**Bug prevented:**
+**Decision I made:**
 
-- Avoided shipping visible old-assignment content or confusing stale naming in the submitted project.
+- Dashboard should answer fleet-wide questions first.
+- Vehicle detail context should be available without leaving the dashboard.
+- Charts should summarize patterns, not replace the map or trip table.
 
-**Files affected:**
-
-- `src/features/theme/ThemeProvider.tsx`
-- README and product copy across pages/components
-
-### 5. Map-First Dashboard And Live Map Behavior
-
-**Prompt / request:**
-
-> The dashboard should show all vehicles on the map, but on the Live Map page selecting one vehicle should show only that vehicle with all details and alert actions.
-
-**AI-assisted result:**
-
-- Dashboard map remains fleet-wide.
-- Live Map becomes selected-vehicle-focused.
-- Vehicle detail panel shows route, telemetry, driver, location, fuel/battery, ignition, odometer, coordinates, and open issues.
-- Alert actions were added inside the vehicle detail panel on the Live Map page.
-
-**Product decision made:**
-
-- Dashboard answers: “What is happening across the fleet?”
-- Live Map answers: “What exactly is happening with this vehicle?”
-- This reduced redundancy between Dashboard and Live Map.
-
-**Files affected:**
+**Files created/updated:**
 
 - `src/features/fleet/pages/fleet-dashboard-page.tsx`
-- `src/features/fleet/pages/map-page.tsx`
+- `src/features/fleet/page-models/use-fleet-dashboard-page-model.ts`
 - `src/features/fleet/components/fleet-workspace.tsx`
-- `src/features/fleet/components/fleet-map.tsx`
 - `src/features/fleet/components/vehicle-detail-panel.tsx`
+- `src/features/fleet/services/fleet-analytics.ts`
 
-### 6. Alert Workflow
+### 5. Map And Route Inspection
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Add alert action workflow like acknowledge alert button and resolve.
+> Use a real map library. On the dashboard I want all relevant vehicles visible. On the Live Map page, when I select one vehicle, I should see only that vehicle, its route, telemetry, and alerts. Add route playback if useful.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-- Added alert statuses: `open`, `acknowledged`, `resolved`.
-- Added acknowledge and resolve buttons.
-- Added alert status filters.
-- Added alert count cards.
-- Resolved alerts are not prioritized above active work.
+- Added Leaflet/OpenStreetMap map integration.
+- Added markers for vehicle locations.
+- Added selected route polyline.
+- Added route playback controls.
+- Added focused Live Map behavior for one selected vehicle.
+- Added detail panel actions on Live Map.
 
-**Product decision made:**
+**Decision I made:**
 
-- Keep the workflow intentionally small.
-- The prototype does not need full incident management, but it should let an operator act on issues.
+- Dashboard map = fleet-wide awareness.
+- Live Map = selected vehicle investigation.
+- Route playback helps reviewers understand movement history without real GPS ingestion.
 
-**Files affected:**
+**Files created/updated:**
+
+- `src/features/fleet/components/fleet-map.tsx`
+- `src/features/fleet/pages/map-page.tsx`
+- `src/features/fleet/page-models/use-map-page-model.ts`
+- `src/features/fleet/components/fleet-workspace.tsx`
+
+### 6. Vehicle Queue Search And Infinite Scrolling
+
+**Prompt I gave:**
+
+> Vehicle Queue should let me search by vehicle number. It cannot load every vehicle if the fleet grows to thousands or millions of rows. Add indexed server-side search, debouncing, pagination, and infinite scrolling with TanStack Query.
+
+**AI-assisted output:**
+
+- Added debounced vehicle search.
+- Added Supabase `.range(...)` pagination.
+- Added TanStack Query `useInfiniteQuery`.
+- Added indexed search against vehicle registration, model, driver, location, and status.
+- Added infinite scroll loading.
+
+**Decision I made:**
+
+- Vehicle Queue should be a scalable vehicle selector, not a static local list.
+- Search should query Supabase rather than filtering a full database result in React.
+
+**Files created/updated:**
+
+- `src/features/fleet/components/vehicle-list.tsx`
+- `src/features/fleet/hooks/use-fleet-query.ts`
+- `src/features/fleet/services/fleet-repository.ts`
+- `src/hooks/use-debounced-value.ts`
+- `supabase-schema.sql`
+
+### 7. Trips Page: Server-Side Filtering And Pagination
+
+**Prompt I gave:**
+
+> Trip Log should show 10 records per page, support search, date filtering, and sorting. Do not fetch all trips and filter on the client. The chart should stay useful if there are hundreds of vehicles.
+
+**AI-assisted output:**
+
+- Added trip search with debouncing.
+- Added date range filters.
+- Added sortable columns.
+- Added server-side pagination with 10 rows per page.
+- Added chart limit controls for Top 12, Top 25, Top 50.
+- Added CSV export.
+
+**Decision I made:**
+
+- Trip table data should come from Supabase with search/filter/sort/page parameters.
+- Charts should be scoped so they remain readable with larger datasets.
+
+**Files created/updated:**
+
+- `src/features/fleet/pages/trips-page.tsx`
+- `src/features/fleet/page-models/use-trips-page-model.ts`
+- `src/features/fleet/components/trip-table.tsx`
+- `src/features/fleet/components/chart-limit-control.tsx`
+- `src/features/fleet/services/fleet-repository.ts`
+
+### 8. Alerts Page And Alert Workflow
+
+**Prompt I gave:**
+
+> Alerts should support filtering and search by vehicle number. Add open, acknowledged, and resolved filters. Add acknowledge and resolve actions. Resolved alerts should not stay at the top like active issues.
+
+**AI-assisted output:**
+
+- Added alert status filters: All, Open, Acknowledged, Resolved.
+- Added debounced alert search.
+- Added server-side alert pagination.
+- Added count-only queries for alert KPI cards.
+- Added acknowledge and resolve mutations.
+- Added alert actions in the Live Map vehicle detail panel.
+
+**Decision I made:**
+
+- Alert workflow should be small but real: `open -> acknowledged -> resolved`.
+- Operators need to act from both the Alerts page and selected vehicle context.
+
+**Files created/updated:**
 
 - `src/features/fleet/pages/alerts-page.tsx`
 - `src/features/fleet/page-models/use-alerts-page-model.ts`
@@ -193,98 +250,139 @@ Generated realistic sample data for:
 - `src/features/fleet/hooks/use-fleet-query.ts`
 - `src/features/fleet/services/fleet-repository.ts`
 
-### 7. TanStack Query, Zustand, Debouncing, And Realtime Review
+### 9. State Management And Query Architecture Audit
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Check the whole codebase and see if Zustand, TanStack Query, realtime, throttling, debouncing, and server-side querying are applied across the app.
+> Check the whole app. I want TanStack Query for Supabase server/cache state and Zustand for shared UI state. Make sure search, filters, selected vehicle, pages, chart limits, realtime, debouncing, and throttling are consistently applied.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-Confirmed and improved the architecture split:
+- Verified TanStack Query usage for:
+  - Fleet dataset
+  - Vehicle queue
+  - Trip pages
+  - Alert pages
+  - Alert counts
+  - Selected vehicle snapshot
+  - Alert mutations
+- Verified Zustand usage for:
+  - Selected vehicle
+  - Global vehicle search
+  - Trip search/sort/date/page
+  - Alert search/filter/page
+  - Chart limits
+  - Mobile drawer state
+- Confirmed debouncing for vehicle, trip, and alert search.
+- Confirmed throttled realtime invalidation.
 
-- TanStack Query handles Supabase server/cache state.
-- Zustand handles UI/query state: selected vehicle, search text, filters, pages, chart limits, mobile drawer.
-- Debounced search is used for vehicle queue, trips, and alerts.
-- Supabase Realtime invalidates relevant TanStack Query caches.
-- Realtime invalidation is throttled to avoid excessive refetching.
+**Decision I made:**
 
-**Engineering decision made:**
+- Keep server state and UI state separate.
+- TanStack Query owns remote data and caching.
+- Zustand owns user selections and controls.
 
-- Keep server data in TanStack Query.
-- Keep UI state in Zustand.
-- Do not mix server cache state and UI state unnecessarily.
-
-**Files affected:**
+**Files reviewed/updated:**
 
 - `src/features/fleet/hooks/use-fleet-query.ts`
 - `src/store/index.ts`
 - `src/hooks/use-debounced-value.ts`
 - `src/features/layout/AppShell.tsx`
 
-### 8. Large Dataset And Pagination Improvements
+### 10. Supabase Realtime Behavior
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Make it good for millions of rows. Do not fetch the whole database. Add indexing, debouncing, throttling, pagination, infinite scrolling, and query directly from Supabase.
+> Are we subscribed to real-time updates from Supabase? If a vehicle location changes in Supabase, should the map update? Explain how this is implemented and how to test it.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-- Vehicle Queue uses `useInfiniteQuery` and Supabase range pagination.
-- Trip Log uses server-side search/date/sort/pagination.
-- Alerts use server-side status filter/search/pagination.
-- Added indexes and trigram indexes in Supabase schema.
-- Chart row limits were added so charts remain readable.
+- Added/verified Realtime subscription for:
+  - `vehicles`
+  - `trips`
+  - `fleet_alerts`
+  - `telemetry_points`
+- Explained that the browser WebSocket status `101 Switching Protocols` is expected.
+- Added throttled invalidation of TanStack Query caches.
+- Added SQL examples in README for testing realtime changes.
 
-**Engineering decision made:**
+**Decision I made:**
 
-- The app should never fetch all rows for list/table screens.
-- Search should happen through Supabase queries and indexes.
-- Charts should have selectable caps instead of trying to render hundreds/thousands of bars.
+- Use query invalidation instead of manually mutating every cache shape because multiple screens depend on the same tables.
+- Throttle invalidation to avoid noisy refetching during bursts.
 
-**Files affected:**
+**Files created/updated:**
 
-- `supabase-schema.sql`
-- `src/features/fleet/services/fleet-repository.ts`
 - `src/features/fleet/hooks/use-fleet-query.ts`
-- `src/features/fleet/components/vehicle-list.tsx`
-- `src/features/fleet/components/trip-table.tsx`
-- `src/features/fleet/components/chart-limit-control.tsx`
-- `src/store/index.ts`
+- `src/features/layout/AppShell.tsx`
+- `README.md`
 
-### 9. UI Fixes And Layout Review
+### 11. UI Bugs And Improvements During Build
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Fix overlapping map/header issues and improve UI where there is too much empty space or too much vertical vehicle-card space.
+> Check the UI and fix issues: map/header overlap while scrolling, too much empty space, vehicle cards too tall, and duplicated behavior between Dashboard and Live Map.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-- Adjusted map/container stacking so map controls do not overlap the sticky app header incorrectly.
-- Improved vehicle queue layout density.
-- Reduced redundant dashboard/live-map behavior.
-- Kept visual hierarchy focused around map + queue + details.
+- Fixed map stacking/scroll overlap behavior.
+- Improved Vehicle Queue density.
+- Reduced redundant Live Map behavior by making it vehicle-focused.
+- Kept Dashboard fleet-wide.
 
-**Bug prevented:**
+**Bugs found and solved:**
 
-- Prevented Leaflet controls/map container from visually covering navigation/header while scrolling.
-- Reduced UI clutter and duplicated product surfaces.
-- Fixed excessive vertical spacing in vehicle cards so the Vehicle Queue works better as an operations selector.
+- **Map/header overlap:** Leaflet controls and map container could visually overlap the sticky header. The fix adjusted stacking and container behavior so the header stays above page content.
+- **Dashboard/Live Map redundancy:** Both pages initially felt too similar. The fix made Dashboard fleet-wide and Live Map selected-vehicle-focused.
+- **Vehicle card spacing:** Vehicle cards consumed too much vertical space. The fix made queue cards more compact while preserving key status fields.
 
-**Files affected:**
+**Files created/updated:**
 
 - `src/features/fleet/components/fleet-map.tsx`
 - `src/features/fleet/components/fleet-workspace.tsx`
 - `src/features/fleet/components/vehicle-list.tsx`
 - `src/features/layout/TopBar.tsx`
 
-### 10. Refactoring Page Logic Into `.ts` Files
+### 12. Bug-Finding Pass Before Submission
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Whatever is directly in pages, move it into `.ts` files and use it in components so it is easier to explain the code.
+> Check the whole codebase and tell me if any concepts are half applied. Check login, Zustand, TanStack Query, realtime, debouncing, throttling, Supabase querying, and page/component structure.
 
-**AI-assisted result:**
+**AI-assisted output:**
+
+Found and fixed multiple issues:
+
+- A dashboard chart variable used `statusBreakdown` instead of `model.statusBreakdown`.
+- A stale theme storage key was named `hfa-theme`; renamed to `bytebeam-theme`.
+- Page TSX files still had too much page logic; extracted page-model hooks.
+- Vehicle Queue needed infinite scrolling rather than only a fixed page.
+- Trips and alerts needed server-backed search and pagination.
+- Realtime WebSocket `101` needed to be documented as expected behavior.
+- Browser extension console warnings were identified as unrelated to the app.
+
+**Decision I made:**
+
+- Treat the audit as a quality gate before submission.
+- Fix small naming/structure bugs because they hurt reviewer confidence.
+- Document expected realtime behavior to avoid confusion during review.
+
+**Files created/updated:**
+
+- `src/features/fleet/page-models/*`
+- `src/features/settings/page-models/use-settings-page-model.ts`
+- `src/features/fleet/pages/*`
+- `src/features/settings/pages/settings-page.tsx`
+- `src/features/theme/ThemeProvider.tsx`
+- `README.md`
+
+### 13. Page-Model Refactor For Explainability
+
+**Prompt I gave:**
+
+> Move page-level logic out of TSX page files into `.ts` files so I can explain the code cleanly in an interview. Pages should mostly render UI, while hooks/models handle data, derived values, and handlers.
+
+**AI-assisted output:**
 
 Created page-model hooks:
 
@@ -295,215 +393,130 @@ Created page-model hooks:
 - `use-login-page-model.ts`
 - `use-settings-page-model.ts`
 
-Moved page-level logic into these files:
+**Decision I made:**
 
-- Data fetching composition
-- Derived metrics
-- Search/filter/page state
-- Event handlers
-- Alert row shaping
-- Theme option shaping
+- Keep TSX files presentation-focused.
+- Put data composition and interaction handlers in typed hooks.
+- Make the architecture easier to discuss during review.
 
-**Engineering decision made:**
-
-- TSX pages should mostly render UI.
-- Business/data logic should live in typed hooks and repository/service files.
-- This makes the architecture easier to explain during review/interview.
-
-**Files affected:**
+**Files created/updated:**
 
 - `src/features/fleet/page-models/*`
 - `src/features/settings/page-models/use-settings-page-model.ts`
 - `src/features/fleet/pages/*`
 - `src/features/settings/pages/settings-page.tsx`
-- `src/routes/settings.tsx`
 
-### 11. README Expansion
+### 14. README And Submission Documentation
 
-**Prompt / request:**
+**Prompt I gave:**
 
-> Create a perfect README with product, tech, Supabase structure, why features exist, how it helps the team, technical decisions, submission checklist, and AI usage.
+> Write a detailed README for a job application submission. Explain what we built, why every feature exists, how it helps the operations team, how the Supabase schema is structured, technical decisions, tradeoffs, setup, realtime test SQL, file structure, AI usage, and submission checklist.
 
-**AI-assisted result:**
+**AI-assisted output:**
 
-Expanded `README.md` into a detailed submission document covering:
+Expanded the README with:
 
 - Product scenario interpretation
-- What was built
-- Why every feature exists
-- How the app works end to end
-- Supabase backend structure
-- RLS and realtime
+- Feature-by-feature explanation
+- End-to-end app flow
+- Project structure
+- Supabase schema explanation
+- RLS and realtime explanation
 - Indexing and scale decisions
-- Technical stack choices
+- Frontend technical design
 - Data fetching strategy
-- Product tradeoffs
+- Product decisions and tradeoffs
 - Production improvements
 - Setup instructions
 - Realtime test SQL
 - AI usage
 - Submission checklist
 
-**Engineering/review decision made:**
+**Decision I made:**
 
-- The README should help reviewers understand product thinking and technical choices without needing a live walkthrough.
+- Make the README reviewer-facing and interview-friendly.
+- Include enough detail to explain both product and engineering choices without a live walkthrough.
 
-**Files affected:**
-
-- `README.md`
-
-### 12. Explicit Bug-Finding And Improvement Pass
-
-**Prompt / request:**
-
-> Check the whole codebase and see if the dashboard is complete, no concepts are half applied, and add details about bugs/improvements found while building.
-
-**AI-assisted result:**
-
-Reviewed the codebase for half-applied concepts:
-
-- Supabase Auth usage
-- TanStack Query usage
-- Zustand usage
-- Supabase Realtime subscription
-- Realtime throttling
-- Debounced search
-- Server-side pagination/search
-- Old assignment leftovers
-- Page/component boundaries
-- Dashboard and Live Map product overlap
-
-**Bugs or issues found:**
-
-- A stale old-assignment local storage key was still named `hfa-theme`.
-- The dashboard status chart referenced `statusBreakdown` directly instead of `model.statusBreakdown`.
-- The initial dashboard/live-map experience repeated too much behavior instead of having separate purposes.
-- Vehicle Queue originally behaved more like a fixed list; it needed infinite scrolling for large fleets.
-- Trip and alert search needed to query Supabase directly instead of relying on client-side filtering.
-- Alert rows had too much data shaping inside TSX pages, making the code harder to explain.
-- Browser console warnings from an extension were initially confused with possible app problems.
-- Supabase Realtime WebSocket `101 Switching Protocols` needed to be understood as expected behavior, not a failed request.
-
-**Fixes made:**
-
-- Renamed theme storage key to `bytebeam-theme`.
-- Fixed the dashboard status chart reference.
-- Split dashboard into fleet-wide overview and Live Map into vehicle-focused inspection.
-- Added infinite scrolling and server-side search to Vehicle Queue.
-- Added server-side pagination/search/sort/date filters for trips.
-- Added server-side status/search/pagination for alerts.
-- Moved page logic into `.ts` page-model hooks.
-- Documented realtime behavior and expected WebSocket status.
-
-**Improvement decisions made:**
-
-- Added debouncing to vehicle, trip, and alert search so typing does not fire a query on every keystroke.
-- Added throttled TanStack Query invalidation for Supabase Realtime so bursts of database changes do not cause refetch spam.
-- Added chart scope controls so charts stay readable when the database has many vehicles/trips.
-- Added Supabase indexes and trigram indexes so search and pagination are backed by the database.
-- Added a project structure section to README so reviewers can quickly understand where each concern lives.
-
-**Files affected:**
+**Files created/updated:**
 
 - `README.md`
 - `AI_CHAT_LOGS.md`
-- `src/features/theme/ThemeProvider.tsx`
-- `src/features/fleet/pages/fleet-dashboard-page.tsx`
-- `src/features/fleet/components/vehicle-list.tsx`
-- `src/features/fleet/components/trip-table.tsx`
-- `src/features/fleet/page-models/*`
-- `src/features/fleet/hooks/use-fleet-query.ts`
-- `src/features/fleet/services/fleet-repository.ts`
-- `supabase-schema.sql`
 
-## Key Architecture Decisions From The AI-Assisted Process
+## Key Product Decisions
 
-### Product Decisions
+- **Map-first dashboard:** Location and route history are central to connected fleet operations.
+- **Fleet Dashboard vs Live Map split:** Dashboard is fleet-wide; Live Map is vehicle-focused.
+- **Vehicle Queue:** A searchable selector is more useful for operations than a giant static list.
+- **Alert workflow:** Operators need to acknowledge and resolve issues, not just view cards.
+- **Trip analysis:** Distance, idle time, speed, halts, and overspeed events provide useful operational signals.
+- **Chart limits:** Capped chart scopes keep analytics readable with large datasets.
+- **CSV export:** Provides a lightweight way to review/share trip efficiency data.
 
-- Build an internal operations dashboard, not a marketing page.
-- Keep the dashboard fleet-wide.
-- Make the Live Map selected-vehicle-focused.
-- Include alert workflow because operators need to act, not only observe.
-- Use chart caps to keep analytics readable.
-- Make vehicle registration search central because operators commonly identify vehicles by number.
+## Key Technical Decisions
 
-### Backend Decisions
+- **Supabase Auth:** Real authentication for protected dashboard access.
+- **Supabase Postgres:** Persisted backend data instead of frontend-only mock state.
+- **RLS:** Authenticated-only table access for assignment scope.
+- **Supabase Realtime:** Keeps dashboard data fresh after database changes.
+- **TanStack Query:** Handles remote data fetching, caching, pagination, mutations, and invalidation.
+- **Zustand:** Handles shared UI state such as selected vehicle, filters, pages, and chart limits.
+- **Leaflet:** Real map library for markers, routes, popups, and playback.
+- **Recharts:** Lightweight charts for fleet/trip insights.
+- **Page-model hooks:** Keep TSX pages clean and explainable.
+- **Debouncing:** Prevents search inputs from sending a query on every keystroke.
+- **Throttling:** Prevents realtime bursts from causing too many refetches.
+- **Indexes/trigram indexes:** Support scalable search and pagination in Supabase.
 
-- Use Supabase Auth for real login.
-- Use Supabase Postgres for persisted fleet data.
-- Use four domain tables: vehicles, trips, fleet alerts, telemetry points.
-- Use RLS with authenticated policies for assignment scope.
-- Add Realtime publication for all core fleet tables.
-- Add indexes and trigram search indexes for scalable search/pagination.
+## Tradeoffs Documented With AI Help
 
-### Frontend Decisions
+- `route_points` JSONB is enough for prototype route playback but a production system would use telemetry ranges or geospatial/time-series storage.
+- Dashboard uses capped operational snapshots for responsiveness; production could add aggregate database views/RPC functions.
+- RLS allows authenticated access for the prototype; production would add org/team scoping and roles.
+- Realtime uses cache invalidation instead of manually patching every query cache; simpler and safer for this prototype.
+- Charts use capped scopes because hundreds of bars would be unreadable.
 
-- Use TanStack Query for server state.
-- Use Zustand for UI/filter/selection state.
-- Use Leaflet/OpenStreetMap for real map behavior.
-- Use Recharts for readable dashboard analytics.
-- Use page-model hooks to keep TSX render files clean.
-- Use debouncing for search inputs.
-- Use throttled realtime invalidation to prevent refetch bursts.
+## Bugs Found Or Prevented During The AI-Assisted Process
 
-## Bugs Or Risks AI Helped Identify / Prevent
+- Dashboard chart variable bug: `statusBreakdown` needed to be `model.statusBreakdown`.
+- Stale theme key: `hfa-theme` was renamed to `bytebeam-theme`.
+- Map/header overlap while scrolling was fixed by adjusting map/container stacking.
+- Vehicle Queue was improved from fixed-list behavior to infinite pagination.
+- Trip and alert filtering were moved to Supabase queries instead of unbounded client filtering.
+- Search inputs were debounced to avoid excessive queries.
+- Realtime invalidation was throttled to avoid refetch bursts.
+- Dashboard and Live Map were separated into distinct product purposes.
+- Browser extension console warnings were identified as unrelated to the app.
+- Supabase WebSocket `101 Switching Protocols` was identified as expected realtime behavior.
+- Page TSX files were refactored so business logic did not stay buried in render files.
 
-- Old assignment/domain leftovers in product copy and theme storage key.
-- Login page accidentally becoming too marketing-heavy.
-- Vehicle Queue only showing a fixed number without infinite scrolling.
-- Trip and alert pages fetching/filtering too much data on the client.
-- Charts becoming unreadable with hundreds or thousands of vehicles.
-- Dashboard and Live Map repeating the same product purpose.
-- Supabase realtime WebSocket status `101` being misread as an error.
-- Browser extension console warnings being mistaken for app errors.
-- Page TSX files accumulating too much business logic.
-- Dashboard chart variable bug from using `statusBreakdown` instead of the page-model value.
-- Search inputs potentially over-querying Supabase before debouncing was added.
-- Realtime events potentially causing too many refetches before throttled invalidation was added.
-- Old fixed-size list behavior not scaling to thousands of vehicles before infinite pagination was added.
+## Validation Performed
 
-## Validation Done
-
-The following validation was performed during the AI-assisted build process:
-
-- Codebase searches for old assignment terms.
-- Review of data-fetching paths to ensure high-volume screens query Supabase directly.
-- Review of Zustand usage across shared UI state.
-- Review of TanStack Query usage across backend data.
-- Review of Supabase Realtime subscription and invalidation behavior.
-- Formatting with `npm run format`.
-- Production builds with `npm run build`.
-- Git commits and pushes after reviewed milestones.
+- Ran codebase searches for stale/non-product terminology.
+- Reviewed data fetching to ensure high-volume screens do not fetch the full database.
+- Reviewed TanStack Query usage across server data.
+- Reviewed Zustand usage across shared UI state.
+- Reviewed Supabase Realtime subscription and cache invalidation.
+- Reviewed debouncing and throttling usage.
+- Ran `npm run format`.
+- Ran `npm run build`.
+- Committed and pushed reviewed milestones to GitHub.
 
 ## Limitations Acknowledged
 
-The AI-assisted process also helped clarify what this prototype does **not** include:
+The prototype intentionally does not include:
 
-- No real physical device ingestion pipeline.
-- No production telemetry stream processor.
-- No organization/team-specific RLS yet.
-- No user roles yet.
-- No PostGIS/viewport queries yet.
-- No audit history table for alert workflow yet.
+- Real device ingestion.
+- Production telemetry stream processing.
+- Organization/team-based permissions.
+- User roles.
+- PostGIS/viewport-based map querying.
+- Alert audit history table.
+- Production monitoring/error tracking.
 
-These were intentionally left out because the assignment prioritizes a coherent working product prototype over a production-scale telemetry platform.
+These were documented as future production improvements because the assignment asked for a coherent working prototype, not a full telemetry platform.
 
 ## Final Reviewer Summary
 
-AI helped accelerate planning, implementation, refactoring, and review, but the output was repeatedly checked against the Bytebeam assignment brief.
+AI was used efficiently by giving it clear constraints and asking for targeted output: schema design, feature implementation, architecture audits, bug-finding, tradeoff analysis, refactoring, and documentation.
 
-The final product is a coherent map-first fleet operations dashboard with:
-
-- Supabase Auth
-- Protected dashboard routes
-- Persisted Supabase fleet data
-- Real map integration
-- Vehicle search and infinite scrolling
-- Trip search/filter/sort/pagination
-- Alert filtering and workflow actions
-- Supabase Realtime refresh
-- TanStack Query server-state management
-- Zustand UI-state management
-- Detailed README and setup notes
-
-This is the intended distinction from unreviewed vibe-coding: the features are tied back to product needs, the backend model is explicit, the tradeoffs are documented, and the code was refactored/validated for explainability.
+The final app is not a one-shot generated scaffold. It is a reviewed and iterated product prototype with clear product reasoning, a Supabase-backed data model, real map interaction, scalable search/pagination patterns, realtime refresh, state management separation, documented tradeoffs, and validation steps.

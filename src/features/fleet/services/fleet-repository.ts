@@ -16,6 +16,7 @@ const DASHBOARD_VEHICLE_LIMIT = 100;
 const DASHBOARD_TRIP_LIMIT = 200;
 const DASHBOARD_ALERT_LIMIT = 200;
 const VEHICLE_QUEUE_LIMIT = 25;
+const EXPORT_PAGE_SIZE = 1000;
 
 export interface AlertStatusCounts {
   open: number;
@@ -344,6 +345,55 @@ export async function fetchTripPage({
     totalCount: trips.count ?? tripRows.length,
     page,
     pageSize,
+  };
+}
+
+export async function fetchTripExport({
+  search,
+  dateFrom,
+  dateTo,
+  sortKey,
+}: {
+  search: string;
+  dateFrom: string;
+  dateTo: string;
+  sortKey: "startedAt" | "distanceKm" | "idleMinutes" | "overspeedEvents";
+}): Promise<TripPageResult> {
+  const firstPage = await fetchTripPage({
+    search,
+    dateFrom,
+    dateTo,
+    sortKey,
+    page: 0,
+    pageSize: EXPORT_PAGE_SIZE,
+  });
+
+  const pages = [firstPage];
+  const totalPages = Math.ceil(firstPage.totalCount / EXPORT_PAGE_SIZE);
+
+  for (let page = 1; page < totalPages; page += 1) {
+    pages.push(
+      await fetchTripPage({
+        search,
+        dateFrom,
+        dateTo,
+        sortKey,
+        page,
+        pageSize: EXPORT_PAGE_SIZE,
+      }),
+    );
+  }
+
+  const trips = pages.flatMap((page) => page.trips);
+  const vehicleMap = new Map<string, Vehicle>();
+  pages.flatMap((page) => page.vehicles).forEach((vehicle) => vehicleMap.set(vehicle.id, vehicle));
+
+  return {
+    trips,
+    vehicles: [...vehicleMap.values()],
+    totalCount: firstPage.totalCount,
+    page: 0,
+    pageSize: trips.length,
   };
 }
 

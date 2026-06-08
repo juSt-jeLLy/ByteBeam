@@ -155,7 +155,7 @@ Created a scalable feature structure and page-model hooks:
 - Added selected vehicle details.
 - Added trip utilization and fleet status charts.
 - Added summary metrics for distance, idle time, and overspeed events.
-- Added CSV export for trip efficiency data.
+- Added CSV export for full matching trip efficiency data, separate from chart-capped rows.
 
 **Decision I made:**
 
@@ -239,7 +239,7 @@ Created a scalable feature structure and page-model hooks:
 - Added sortable columns.
 - Added server-side pagination with 10 rows per page.
 - Added chart limit controls for Top 12, Top 25, Top 50.
-- Added CSV export.
+- Added CSV export that fetches all matching trip rows instead of exporting only chart rows.
 
 **Decision I made:**
 
@@ -418,7 +418,7 @@ The sections above are the main/core prompts that shaped the product, architectu
 - **Alert workflow:** Operators need to acknowledge and resolve issues, not just view cards.
 - **Trip analysis:** Distance, idle time, speed, halts, and overspeed events provide useful operational signals.
 - **Chart limits:** Capped chart scopes keep analytics readable with large datasets.
-- **CSV export:** Provides a lightweight way to review/share trip efficiency data.
+- **CSV export:** Provides a lightweight way to review/share all matching trip efficiency data, while charts stay capped for readability.
 
 ## Key Technical Decisions
 

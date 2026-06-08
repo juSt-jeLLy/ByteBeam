@@ -5,6 +5,7 @@ import {
   computeTripEfficiency,
   computeVehicleUtilization,
   useFleetDataset,
+  useTripExport,
 } from "@/features/fleet";
 import {
   useSelectedVehicleId,
@@ -21,6 +22,7 @@ export function useFleetDashboardPageModel() {
   const setSelectedVehicleId = useSetSelectedVehicleId();
   const vehicleChartLimit = useVehicleChartLimit();
   const setVehicleChartLimit = useSetVehicleChartLimit();
+  const tripExport = useTripExport();
   const data = fleetDataset.data;
 
   const selectedTrip = useMemo(
@@ -44,6 +46,14 @@ export function useFleetDashboardPageModel() {
     utilization: data
       ? computeVehicleUtilization(data.vehicles, data.trips, vehicleChartLimit)
       : [],
-    tripEfficiency: data ? computeTripEfficiency(data.trips, data.vehicles) : [],
+    exportAllTrips: async () => {
+      const exportData = await tripExport.mutateAsync({
+        search: "",
+        dateFrom: "",
+        dateTo: "",
+        sortKey: "startedAt",
+      });
+      return computeTripEfficiency(exportData.trips, exportData.vehicles);
+    },
   };
 }

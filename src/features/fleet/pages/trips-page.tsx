@@ -17,7 +17,10 @@ export function TripsPage() {
           title="Trips"
           description="Trip history, speed behavior, route efficiency, and idle hotspots."
         />
-        <ExportCsvButton fileName="bytebeam-trip-efficiency.csv" rows={model.chartEfficiency} />
+        <ExportCsvButton
+          fileName="bytebeam-trip-efficiency.csv"
+          getRows={model.exportAllMatchingTrips}
+        />
       </div>
 
       <ChartCard

@@ -1,4 +1,4 @@
-import { computeTripEfficiency, useTripPage } from "@/features/fleet";
+import { computeTripEfficiency, useTripExport, useTripPage } from "@/features/fleet";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
   useSetTripChartLimit,
@@ -17,6 +17,7 @@ export function useTripsPageModel() {
   const tripSortKey = useTripSortKey();
   const tripChartLimit = useTripChartLimit();
   const setTripChartLimit = useSetTripChartLimit();
+  const tripExport = useTripExport();
   const chartTrips = useTripPage({
     search: debouncedTripSearch,
     dateFrom,
@@ -30,6 +31,15 @@ export function useTripsPageModel() {
     tripChartLimit,
     setTripChartLimit,
     isChartLoading: chartTrips.isLoading,
+    exportAllMatchingTrips: async () => {
+      const exportData = await tripExport.mutateAsync({
+        search: debouncedTripSearch,
+        dateFrom,
+        dateTo,
+        sortKey: tripSortKey,
+      });
+      return computeTripEfficiency(exportData.trips, exportData.vehicles);
+    },
     chartEfficiency: computeTripEfficiency(
       chartTrips.data?.trips ?? [],
       chartTrips.data?.vehicles ?? [],

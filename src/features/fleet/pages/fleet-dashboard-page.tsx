@@ -44,7 +44,7 @@ export function FleetDashboardPage() {
           title="Fleet Dashboard"
           description="Live vehicle status, route history, and operating exceptions for the Bengaluru fleet."
         />
-        <ExportCsvButton fileName="bytebeam-fleet-trips.csv" rows={model.tripEfficiency} />
+        <ExportCsvButton fileName="bytebeam-fleet-trips.csv" getRows={model.exportAllTrips} />
       </div>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

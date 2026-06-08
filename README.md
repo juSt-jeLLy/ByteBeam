@@ -66,7 +66,7 @@ It shows:
 - Trip utilization chart
 - Fleet status chart
 - Distance, idle time, and overspeed summary
-- CSV export for trip efficiency review
+- CSV export for full matching trip efficiency review
 
 Why it exists:
 
@@ -203,7 +203,7 @@ It includes:
 - Date range filters
 - Sortable trip columns
 - 10-row pagination
-- CSV export
+- CSV export for all matching trips
 
 Why it exists:
 
@@ -218,6 +218,7 @@ How it works:
 - Trips are fetched from Supabase with `.range(...)` pagination.
 - Sorting is pushed into the Supabase query.
 - The chart uses a capped query so hundreds or thousands of vehicles do not make the chart unreadable.
+- CSV export fetches all matching trip rows on demand, so exports are not limited by the visible chart scope or current table page.
 
 Relevant files:
 
@@ -816,7 +817,7 @@ Why:
 Why:
 
 - Operations users often need to share or review trip efficiency outside the app.
-- CSV export gives a lightweight reporting path.
+- CSV export gives a lightweight reporting path and fetches all matching trip rows on demand instead of exporting only the capped chart dataset.
 
 ### Realtime refresh
 

@@ -4,6 +4,7 @@ import {
   fetchAlertPage,
   fetchAlertStatusCounts,
   fetchFleetDataset,
+  fetchTripExport,
   fetchTripPage,
   fetchVehicleQueue,
   fetchVehicleSnapshot,
@@ -112,6 +113,12 @@ export function useTripPage({
     queryKey: [...TRIP_PAGE_QUERY_KEY, search, dateFrom, dateTo, sortKey, page, pageSize],
     queryFn: () => fetchTripPage({ search, dateFrom, dateTo, sortKey, page, pageSize }),
     staleTime: 30_000,
+  });
+}
+
+export function useTripExport() {
+  return useMutation({
+    mutationFn: fetchTripExport,
   });
 }
 

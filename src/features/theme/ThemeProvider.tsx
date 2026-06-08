@@ -10,7 +10,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "hfa-theme";
+const STORAGE_KEY = "bytebeam-theme";
 
 /** Read the persisted theme, defaulting to user OS preference. */
 function readInitialTheme(): Theme {

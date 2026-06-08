@@ -406,41 +406,9 @@ Found and fixed multiple issues:
 - `src/features/settings/pages/settings-page.tsx`
 - `README.md`
 
-### 14. README And Submission Documentation
+## Note On Prompt Coverage
 
-**Prompt I gave:**
-
-> Write a detailed reviewer-facing README for a job application submission. It should explain what product we built, why every feature exists, how each feature helps the operations team, how the app works end to end, the full Supabase structure, RLS/realtime/indexing decisions, frontend technical decisions, TanStack Query/Zustand split, debouncing/throttling/search/pagination strategy, tradeoffs, production improvements, setup steps, realtime test SQL, project file structure, AI usage, and submission checklist.
-
-**AI-assisted output:**
-
-Expanded the README with:
-
-- Product scenario interpretation
-- Feature-by-feature explanation
-- End-to-end app flow
-- Project structure
-- Supabase schema explanation
-- RLS and realtime explanation
-- Indexing and scale decisions
-- Frontend technical design
-- Data fetching strategy
-- Product decisions and tradeoffs
-- Production improvements
-- Setup instructions
-- Realtime test SQL
-- AI usage
-- Submission checklist
-
-**Decision I made:**
-
-- Make the README reviewer-facing and interview-friendly.
-- Include enough detail to explain both product and engineering choices without a live walkthrough.
-
-**Files created/updated:**
-
-- `README.md`
-- `AI_CHAT_LOGS.md`
+The sections above are the main/core prompts that shaped the product, architecture, Supabase backend, realtime behavior, state management, scalability, and major bug fixes. In addition to these core prompts, I also used AI for smaller implementation support during the build: checking edge cases, fixing UI issues, validating whether a concept was fully applied, improving wording, and making documentation clearer. Those smaller exchanges were reviewed and folded into the final code and docs, but the prompts above represent the main direction-setting work.
 
 ## Key Product Decisions
 

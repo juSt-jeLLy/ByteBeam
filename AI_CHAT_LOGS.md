@@ -390,6 +390,7 @@ Found and fixed multiple issues:
 - Vehicle Queue needed infinite scrolling rather than only a fixed page.
 - Trips and alerts needed server-backed search and pagination.
 - Realtime WebSocket `101` needed to be documented as expected behavior.
+- CSV export was initially wired to chart/dashboard rows, which meant it could export capped data instead of all matching trips.
 - Browser extension console warnings were identified as unrelated to the app.
 
 **Decision I made:**
@@ -397,6 +398,7 @@ Found and fixed multiple issues:
 - Treat the audit as a quality gate before submission.
 - Fix small structure or implementation bugs because they hurt reviewer confidence.
 - Document expected realtime behavior to avoid confusion during review.
+- Keep chart datasets capped for readability, but make CSV export fetch full matching data on demand.
 
 **Files created/updated:**
 
@@ -405,6 +407,8 @@ Found and fixed multiple issues:
 - `src/features/fleet/pages/*`
 - `src/features/settings/pages/settings-page.tsx`
 - `README.md`
+- `src/features/shared/export/export-csv-button.tsx`
+- `src/features/fleet/services/fleet-repository.ts`
 
 ## Note On Prompt Coverage
 
@@ -450,6 +454,7 @@ The sections above are the main/core prompts that shaped the product, architectu
 - Vehicle Queue was improved from fixed-list behavior to infinite pagination.
 - Trip and alert filtering were moved to Supabase queries instead of unbounded client filtering.
 - Search inputs were debounced to avoid excessive queries.
+- CSV export was corrected to fetch all matching trip rows instead of exporting only capped chart/dashboard data.
 - Realtime invalidation was throttled to avoid refetch bursts.
 - Dashboard and Live Map were separated into distinct product purposes.
 - Browser extension console warnings were identified as unrelated to the app.

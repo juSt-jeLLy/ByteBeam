@@ -347,14 +347,13 @@ My workflow was:
 
 **Prompt I gave:**
 
-> Do a final codebase audit before submission. Check if login, Supabase Auth, TanStack Query, Zustand, realtime subscriptions, throttled invalidation, debounced search, server-side Supabase queries, pagination, infinite scrolling, indexes, chart limits, and page/component boundaries are fully applied. If you find bugs, stale names, incorrect variables, repeated UI concepts, or logic buried inside TSX pages, identify the issue, explain why it matters, fix it, and validate the result.
+> Before submission, verify the implementation in the specific files that carry the core architecture. Check `src/features/auth/AuthProvider.tsx` and `src/features/layout/AppShell.tsx` for login/protected-route behavior. Check `src/features/fleet/hooks/use-fleet-query.ts` for TanStack Query, Supabase Realtime, and throttled invalidation. Check `src/store/index.ts` for Zustand state used by selected vehicle, filters, pagination, and chart limits. Check `src/features/fleet/services/fleet-repository.ts` for server-side Supabase search, pagination, sorting, and selected-vehicle queries. Check `src/features/fleet/components/vehicle-list.tsx` and `src/features/fleet/components/trip-table.tsx` for debounced search and pagination behavior. Check the page files under `src/features/fleet/pages` to make sure they are mostly UI and not holding business logic. If any bug or incomplete concept is found, explain the issue, fix it, and validate the result.
 
 **AI-assisted output:**
 
 Found and fixed multiple issues:
 
 - A dashboard chart variable used `statusBreakdown` instead of `model.statusBreakdown`.
-- A stale theme storage key was named `hfa-theme`; renamed to `bytebeam-theme`.
 - Page TSX files still had too much page logic; extracted page-model hooks.
 - Vehicle Queue needed infinite scrolling rather than only a fixed page.
 - Trips and alerts needed server-backed search and pagination.
@@ -364,7 +363,7 @@ Found and fixed multiple issues:
 **Decision I made:**
 
 - Treat the audit as a quality gate before submission.
-- Fix small naming/structure bugs because they hurt reviewer confidence.
+- Fix small structure or implementation bugs because they hurt reviewer confidence.
 - Document expected realtime behavior to avoid confusion during review.
 
 **Files created/updated:**
@@ -373,7 +372,6 @@ Found and fixed multiple issues:
 - `src/features/settings/page-models/use-settings-page-model.ts`
 - `src/features/fleet/pages/*`
 - `src/features/settings/pages/settings-page.tsx`
-- `src/features/theme/ThemeProvider.tsx`
 - `README.md`
 
 ### 13. Page-Model Refactor For Explainability
@@ -478,7 +476,6 @@ Expanded the README with:
 ## Bugs Found Or Prevented During The AI-Assisted Process
 
 - Dashboard chart variable bug: `statusBreakdown` needed to be `model.statusBreakdown`.
-- Stale theme key: `hfa-theme` was renamed to `bytebeam-theme`.
 - Map/header overlap while scrolling was fixed by adjusting map/container stacking.
 - Vehicle Queue was improved from fixed-list behavior to infinite pagination.
 - Trip and alert filtering were moved to Supabase queries instead of unbounded client filtering.

@@ -83,7 +83,38 @@ My workflow was:
 - `src/features/fleet/types.ts`
 - `src/features/fleet/services/fleet-repository.ts`
 
-### 3. Authentication And Protected Routes
+### 3. Scalable Codebase Structure From The Start
+
+**Prompt I gave:**
+
+> While building the dashboard, keep the codebase scalable from the start instead of putting everything directly inside page TSX files. Use a feature-based structure with `components`, `hooks`, `services`, `page-models`, `pages`, and `types`. Put Supabase access in repository/service files, TanStack Query hooks in hook files, derived page state and handlers in page-model `.ts` files, shared UI state in Zustand, and visual rendering in TSX components/pages. I want the final code to be easy to explain in an interview: pages should mostly consume a model and render UI, while business logic, data composition, search/filter/page state, mutation handlers, and row shaping live in typed `.ts` files.
+
+**AI-assisted output:**
+
+Created a scalable feature structure and page-model hooks:
+
+- `use-fleet-dashboard-page-model.ts`
+- `use-trips-page-model.ts`
+- `use-alerts-page-model.ts`
+- `use-map-page-model.ts`
+- `use-login-page-model.ts`
+- `use-settings-page-model.ts`
+
+**Decision I made:**
+
+- Build with a feature/service/hook/component structure from the beginning rather than leaving a late cleanup for the end.
+- Keep TSX files presentation-focused.
+- Put Supabase access, data composition, derived state, and interaction handlers in typed `.ts` files.
+- Make the architecture easier to discuss during review.
+
+**Files created/updated:**
+
+- `src/features/fleet/page-models/*`
+- `src/features/settings/page-models/use-settings-page-model.ts`
+- `src/features/fleet/pages/*`
+- `src/features/settings/pages/settings-page.tsx`
+
+### 4. Authentication And Protected Routes
 
 **Prompt I gave:**
 
@@ -110,7 +141,7 @@ My workflow was:
 - `src/features/fleet/page-models/use-login-page-model.ts`
 - `src/features/layout/AppShell.tsx`
 
-### 4. Dashboard Product Design
+### 5. Dashboard Product Design
 
 **Prompt I gave:**
 
@@ -140,7 +171,7 @@ My workflow was:
 - `src/features/fleet/components/vehicle-detail-panel.tsx`
 - `src/features/fleet/services/fleet-analytics.ts`
 
-### 5. Map And Route Inspection
+### 6. Map And Route Inspection
 
 **Prompt I gave:**
 
@@ -168,7 +199,7 @@ My workflow was:
 - `src/features/fleet/page-models/use-map-page-model.ts`
 - `src/features/fleet/components/fleet-workspace.tsx`
 
-### 6. Vehicle Queue Search And Infinite Scrolling
+### 7. Vehicle Queue Search And Infinite Scrolling
 
 **Prompt I gave:**
 
@@ -195,7 +226,7 @@ My workflow was:
 - `src/hooks/use-debounced-value.ts`
 - `supabase-schema.sql`
 
-### 7. Trips Page: Server-Side Filtering And Pagination
+### 8. Trips Page: Server-Side Filtering And Pagination
 
 **Prompt I gave:**
 
@@ -223,7 +254,7 @@ My workflow was:
 - `src/features/fleet/components/chart-limit-control.tsx`
 - `src/features/fleet/services/fleet-repository.ts`
 
-### 8. Alerts Page And Alert Workflow
+### 9. Alerts Page And Alert Workflow
 
 **Prompt I gave:**
 
@@ -251,7 +282,7 @@ My workflow was:
 - `src/features/fleet/hooks/use-fleet-query.ts`
 - `src/features/fleet/services/fleet-repository.ts`
 
-### 9. State Management And Query Architecture Audit
+### 10. State Management And Query Architecture Audit
 
 **Prompt I gave:**
 
@@ -290,7 +321,7 @@ My workflow was:
 - `src/hooks/use-debounced-value.ts`
 - `src/features/layout/AppShell.tsx`
 
-### 10. Supabase Realtime Behavior
+### 11. Supabase Realtime Behavior
 
 **Prompt I gave:**
 
@@ -318,7 +349,7 @@ My workflow was:
 - `src/features/layout/AppShell.tsx`
 - `README.md`
 
-### 11. UI Bugs And Improvements During Build
+### 12. UI Bugs And Improvements During Build
 
 **Prompt I gave:**
 
@@ -344,7 +375,7 @@ My workflow was:
 - `src/features/fleet/components/vehicle-list.tsx`
 - `src/features/layout/TopBar.tsx`
 
-### 12. Bug-Finding Pass Before Submission
+### 13. Bug-Finding Pass Before Submission
 
 **Prompt I gave:**
 
@@ -374,37 +405,6 @@ Found and fixed multiple issues:
 - `src/features/fleet/pages/*`
 - `src/features/settings/pages/settings-page.tsx`
 - `README.md`
-
-### 13. Scalable Codebase Structure From The Start
-
-**Prompt I gave:**
-
-> While building the dashboard, keep the codebase scalable from the start instead of putting everything directly inside page TSX files. Use a feature-based structure with `components`, `hooks`, `services`, `page-models`, `pages`, and `types`. Put Supabase access in repository/service files, TanStack Query hooks in hook files, derived page state and handlers in page-model `.ts` files, shared UI state in Zustand, and visual rendering in TSX components/pages. I want the final code to be easy to explain in an interview: pages should mostly consume a model and render UI, while business logic, data composition, search/filter/page state, mutation handlers, and row shaping live in typed `.ts` files.
-
-**AI-assisted output:**
-
-Created a scalable feature structure and page-model hooks:
-
-- `use-fleet-dashboard-page-model.ts`
-- `use-trips-page-model.ts`
-- `use-alerts-page-model.ts`
-- `use-map-page-model.ts`
-- `use-login-page-model.ts`
-- `use-settings-page-model.ts`
-
-**Decision I made:**
-
-- Build with a feature/service/hook/component structure from the beginning rather than leaving a late cleanup for the end.
-- Keep TSX files presentation-focused.
-- Put Supabase access, data composition, derived state, and interaction handlers in typed `.ts` files.
-- Make the architecture easier to discuss during review.
-
-**Files created/updated:**
-
-- `src/features/fleet/page-models/*`
-- `src/features/settings/page-models/use-settings-page-model.ts`
-- `src/features/fleet/pages/*`
-- `src/features/settings/pages/settings-page.tsx`
 
 ### 14. README And Submission Documentation
 
